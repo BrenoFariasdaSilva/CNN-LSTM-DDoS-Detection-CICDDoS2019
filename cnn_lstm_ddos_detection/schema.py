@@ -70,3 +70,17 @@ def norm_column_key(name: object) -> str:
     """
 
     return re.sub(r"[^a-z0-9]+", "", str(name).strip().lower())  # Normalize headers while preserving exact names elsewhere
+
+
+def discover_csv_files(root: Path) -> List[Path]:
+    """
+    Discover all CSV files recursively below the raw dataset root.
+
+    :param root: Root directory of the CICDDoS2019 dataset.
+    :return: Sorted list of discovered CSV file paths.
+    """
+
+    files = sorted(path for path in root.rglob("*.csv") if path.is_file())  # Discover source CSV files deterministically
+    if not files:  # Verify if recursive discovery returned no usable CSV files
+        raise FileNotFoundError(f"No .csv files were found recursively under {root}")  # Reject an invalid or incomplete dataset root
+    return files  # Return all source CSV paths in deterministic lexical order
