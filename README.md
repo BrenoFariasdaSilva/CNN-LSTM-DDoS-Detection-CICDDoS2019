@@ -255,3 +255,39 @@ For this project, `0` has explicit retain-all/no-cap semantics:
 ```
 
 `--batch-size` affects TensorFlow training batches only; it does not limit dataset sampling. The Linux data and output defaults remain inside the expected server layout and repository directory, respectively.
+
+## Project Structure
+
+```text
+CNN-LSTM-DDoS-Detection-CICDDoS2019/
+├── .assets/
+│   └── Sounds/
+│       └── NotificationSound.wav
+├── logs/
+│   └── .gitkeep
+├── .gitignore
+├── LICENSE
+├── Logger.py
+├── Makefile
+├── README.md
+├── main.bib
+├── main.py
+├── requirements.txt
+└── cnn_lstm_ddos_detection/
+    ├── __init__.py
+    ├── cli.py
+    ├── config.py
+    ├── constants.py
+    ├── evaluation.py
+    ├── experiment.py
+    ├── model.py
+    ├── persistence.py
+    ├── preprocessing.py
+    ├── sampling.py
+    ├── schema.py
+    ├── system.py
+    ├── timing.py
+    └── workflow.py
+```
+
+`main.py` remains the orchestrator. It now configures the repository-root `Logger.py`, registers the bundled completion sound with `atexit`, starts timing, parses the CLI, validates paths/options, and delegates to the package workflow. The experiment stages remain separated so the reproduction can be inspected and audited independently.
