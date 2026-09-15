@@ -458,3 +458,18 @@ generated_dataset/
 ```
 
 The generated dataset directory can contain the standardized/SMOTE training data, standardized validation/test data, split indices, and preprocessing manifest.
+
+## Reproducibility Notes and Limitations
+
+An exact independent reproduction of the paper's reported number cannot be guaranteed because the publication does not provide every implementation detail. Important reconstruction choices include:
+
+- the exact 12 class labels;
+- the exact CNN/LSTM widths and convolution kernel settings;
+- the feature-axis versus temporal-window sequence construction;
+- random seed(s);
+- epoch count and batch size;
+- SMOTE `k` and exact sampling strategy;
+- exact optimizer settings beyond what is inferable from the paper;
+- the number of independent repeated runs.
+
+The project therefore stores all resolved settings and outputs so the reconstruction remains auditable. The Linux helper currently uses `RUNS=5` as a robustness choice; this should **not** be interpreted as a run count explicitly reported by the paper.
