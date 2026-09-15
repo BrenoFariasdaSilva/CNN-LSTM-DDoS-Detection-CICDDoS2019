@@ -167,3 +167,22 @@ RAW CICDDoS2019
 → validation
 → held-out test evaluation
 ```
+
+## Target Classes
+
+The publication states a 12-class task but does not provide every implementation detail needed to reconstruct the exact class mapping. The project therefore uses the mapping already documented in the reproduction code:
+
+1. `BENIGN`
+2. `DrDoS_DNS`
+3. `DrDoS_LDAP`
+4. `DrDoS_MSSQL`
+5. `DrDoS_NetBIOS`
+6. `DrDoS_NTP`
+7. `DrDoS_SNMP`
+8. `DrDoS_SSDP`
+9. `DrDoS_UDP`
+10. `Syn`
+11. `TFTP`
+12. `UDP-lag`
+
+`WebDDoS` and `Portmap`/`PortScan` are not part of this reconstructed default 12-class target.
