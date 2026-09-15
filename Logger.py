@@ -124,3 +124,19 @@ class Logger:
                 self.terminal_stream.flush()  # Force buffered console content to display
             except Exception:  # Ignore flush failures in detached or closing terminals
                 pass  # Preserve normal shutdown behavior
+
+
+    def close(self: Logger) -> None:
+        """
+        Flush and close only the persistent log file.
+
+        :param self: Logger instance whose file must be closed.
+        :return: None.
+        """
+
+        with self.lock:  # Prevent the file from closing during an active write
+            self.flush()  # Persist any remaining output before closing
+            try:  # Protect interpreter shutdown from repeated close calls
+                self.logfile.close()  # Release the persistent log-file handle
+            except Exception:  # Ignore close failures during interpreter shutdown
+                pass  # Preserve normal shutdown behavior
