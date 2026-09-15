@@ -113,3 +113,23 @@ def persist_configuration(cfg: Config, output_dir: Path) -> None:
     """
 
     (output_dir / "config.json").write_text(json.dumps(asdict(cfg), indent=2), encoding="utf-8")  # Persist configuration using the original JSON representation
+
+
+def persist_source_inventory(csv_files: Sequence[Path], data_dir: Path, output_dir: Path) -> Dict[str, Dict[str, int]]:
+    """
+    Persist the pre-run raw-source snapshot and recursive CSV file inventory.
+
+    :param csv_files: Ordered source CSV files discovered recursively.
+    :param data_dir: Raw dataset root used for relative source paths.
+    :param output_dir: Generated-output directory receiving inventory artifacts.
+    :return: Raw-source metadata snapshot used later for integrity verification.
+    """
+
+    raw_snapshot = snapshot_raw_csvs(csv_files, data_dir)  # Capture source size/mtime metadata before any experiment processing
+    (output_dir / "raw_dataset_snapshot_before.json").write_text(
+        json.dumps(raw_snapshot, indent=2), encoding="utf-8"
+    )  # Persist the pre-run source integrity snapshot
+    (output_dir / "csv_files.txt").write_text(
+        "\n".join(str(path.relative_to(data_dir)) for path in csv_files), encoding="utf-8"
+    )  # Persist the original recursive source-file inventory format
+    return raw_snapshot  # Return the snapshot for post-run integrity comparison
