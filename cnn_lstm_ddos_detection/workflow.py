@@ -261,3 +261,30 @@ def run_all_experiments(cfg: Config, device: str, features: np.ndarray, labels: 
             f"remaining_run_ETA={format_duration(average_run * remaining_runs)}"
         )  # Report repeated-run progress using the original ETA calculation
     return results  # Return ordered per-run metrics for aggregate persistence
+
+
+def build_runs_summary(results: Sequence[Dict[str, object]]) -> pd.DataFrame:
+    """
+    Build the runs_summary table from completed per-run metric dictionaries.
+
+    :param results: Ordered completed per-run metric dictionaries.
+    :return: DataFrame containing the original runs_summary columns.
+    """
+
+    return pd.DataFrame(
+        [
+            {
+                "run": result["run"],
+                "seed": result["seed"],
+                "accuracy": result["accuracy"],
+                "f1_macro": result["f1_macro"],
+                "training_seconds": result["training_seconds"],
+                "run_total_seconds": result["run_total_seconds"],
+                "train_size_before_smote": result["train_size_before_smote"],
+                "train_size_after_smote": result["train_size_after_smote"],
+                "smote_synthetic_rows": result["smote_synthetic_rows"],
+                "distance_to_paper_target": result["distance_to_paper_target"],
+            }
+            for result in results
+        ]
+    )  # Preserve the original run-summary field selection and ordering
