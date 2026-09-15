@@ -305,3 +305,24 @@ CNN-LSTM-DDoS-Detection-CICDDoS2019/
 - Linux completion playback optionally uses `aplay`; missing utilities or headless audio devices do not fail the experiment.
 
 The platform-aware `requirements.txt` installs TensorFlow 2.18.1, `tensorflow-metal` 1.2.0 on Apple Silicon, TensorFlow CUDA user-space dependencies on Linux x86_64, NumPy, pandas, scikit-learn, matplotlib, joblib, and psutil. `Logger.py` and sound playback use only the Python standard library and operating-system commands.
+
+## Setup
+
+### Clone the repository
+
+```bash
+git clone https://github.com/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019.git
+cd CNN-LSTM-DDoS-Detection-CICDDoS2019
+```
+
+No separate installation script is required. The Makefile creates `.venv`, upgrades `pip`, `setuptools`, and `wheel`, installs the platform-aware `requirements.txt`, verifies TensorFlow GPU availability, and executes the experiment.
+
+A manual environment remains supported:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -r requirements.txt
+python main.py --help
+```
