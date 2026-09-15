@@ -159,3 +159,35 @@ def order_common_feature_keys(first_schema: FileSchema, common_keys: Set[str]) -
         if norm_column_key(column) in common_keys
     ]  # Preserve the original first-file feature ordering behavior
     return list(dict.fromkeys(ordered_keys))  # Deduplicate while preserving insertion order
+
+
+def inspect_schemas(csv_files: Sequence[Path], include_identifiers: bool, keep_inbound: bool) -> Tuple[List[FileSchema], List[str], Dict[str, str]]:
+    """
+    Inspect all CSV headers and compute the common usable feature schema.
+
+    :param csv_files: Ordered source CSV paths to inspect.
+    :param include_identifiers: Whether identifier-style columns should be retained.
+    :param keep_inbound: Whether the Inbound feature should be retained.
+    :return: File schemas, ordered common feature keys, and display-name mapping.
+    """
+
+    schemas: List[FileSchema] = []  # Collect exact per-file schema metadata
+    common_keys: Optional[Set[str]] = None  # Track the feature intersection across all CSV files
+    display_names: Dict[str, str] = {}  # Track readable feature names keyed by normalized identifier
+    drop_keys = build_drop_keys(include_identifiers, keep_inbound)  # Compute effective exclusions once for the complete scan
+    started = time.time()  # Start schema-inspection timing
+    total = len(csv_files)  # Capture total file count for progress reporting
+    for index, path in enumerate(csv_files, start=1):  # Inspect source files in their deterministic discovery order
+        schema, candidate_keys = inspect_single_schema(path, drop_keys, display_names)  # Read one header and compute its candidate features
+        common_keys = candidate_keys if common_keys is None else (common_keys & candidate_keys)  # Intersect features across every processed CSV
+        schemas.append(schema)  # Preserve the per-file exact schema for later streaming
+        elapsed = time.time() - started  # Calculate elapsed schema-inspection time
+        eta = eta_from_progress(index, total, elapsed)  # Estimate remaining schema-inspection time
+        print(
+            f"[ETA][SCHEMA] {index}/{total} ({100*index/total:.1f}%) | "
+            f"elapsed={format_duration(elapsed)} | ETA={format_duration(eta)} | {path.name}"
+        )  # Report progress using the original schema-scan fields
+    if not common_keys:  # Verify if every CSV shares at least one usable feature
+        raise RuntimeError("No common usable feature columns exist across all CSV files.")  # Reject incompatible source schemas
+    ordered_keys = order_common_feature_keys(schemas[0], common_keys)  # Restore first-file feature ordering after set intersection
+    return schemas, ordered_keys, display_names  # Return schema data required by the streaming sampler
