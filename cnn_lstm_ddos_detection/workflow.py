@@ -331,3 +331,21 @@ def finalize_raw_integrity(raw_snapshot: Dict[str, Dict[str, int]], csv_files: S
     (output_dir / "raw_dataset_snapshot_after.json").write_text(
         json.dumps(snapshot_raw_csvs(csv_files, data_dir), indent=2), encoding="utf-8"
     )  # Persist the post-run raw-source snapshot after successful verification
+
+
+def report_completion(aggregate: Dict[str, object], pipeline_started: float, output_dir: Path, data_dir: Path) -> None:
+    """
+    Print final aggregate metrics, elapsed time, output location, and raw-data status.
+
+    :param aggregate: Aggregate cross-run metrics dictionary.
+    :param pipeline_started: Complete workflow start timestamp.
+    :param output_dir: Root generated-output directory.
+    :param data_dir: Raw dataset root treated as read-only.
+    :return: None.
+    """
+
+    print("\n[COMPLETE]")  # Emit the original completion section marker
+    print(json.dumps(aggregate, indent=2))  # Display aggregate metrics in persisted JSON form
+    print(f"[COMPLETE] Total elapsed: {format_duration(time.time() - pipeline_started)}")  # Report complete workflow duration
+    print(f"[COMPLETE] All generated data/results are under: {output_dir}")  # Report generated-output location
+    print(f"[COMPLETE] Raw dataset remained read-only: {data_dir}")  # Report raw-source read-only guarantee
