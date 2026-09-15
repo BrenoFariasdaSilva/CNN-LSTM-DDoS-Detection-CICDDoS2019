@@ -439,3 +439,23 @@ def persist_evaluation_outputs(run_dir: Path, feature_names: Sequence[str], data
     joblib.dump(data.imputer, run_dir / "imputer.joblib")  # Persist the train-fitted median imputer
     joblib.dump(data.scaler, run_dir / "scaler.joblib")  # Persist the train-fitted z-score standardizer
     (run_dir / "feature_names.json").write_text(json.dumps(list(feature_names), indent=2), encoding="utf-8")  # Persist ordered readable feature names
+
+
+def cleanup_run(data: PreparedRunData, arrays: ModelArrays, training: TrainingArtifacts, evaluation: EvaluationArtifacts) -> None:
+    """
+    Release large per-run arrays, TensorFlow datasets, and model state after persistence.
+
+    :param data: Prepared run data containing large transformed arrays.
+    :param arrays: Model-ready feature and one-hot arrays.
+    :param training: Training artifacts containing model and TensorFlow datasets.
+    :param evaluation: Held-out evaluation arrays.
+    :return: None.
+    """
+
+    del data.X_train_smote, data.X_val, data.X_test  # Release large transformed feature matrices held by run data
+    del arrays.X_train_model, arrays.X_val_model, arrays.X_test_model  # Release sequence-shaped model input views/references
+    del arrays.y_train_onehot, arrays.y_val_onehot, arrays.y_test_onehot  # Release one-hot target matrices
+    del evaluation.probabilities, evaluation.predictions  # Release held-out prediction arrays
+    del training.train_ds, training.val_ds, training.test_ds, training.model  # Release TensorFlow datasets and trained model references
+    gc.collect()  # Encourage Python to reclaim released per-run memory promptly
+    tf.keras.backend.clear_session()  # Clear Keras graph/session state before the next independent run
