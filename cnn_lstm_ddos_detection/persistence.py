@@ -110,3 +110,20 @@ def persist_generated_dataset(generated_dir: Path, X_train_smote: np.ndarray, y_
     (generated_dir / "preprocessing_manifest.json").write_text(
         json.dumps(dict(manifest), indent=2), encoding="utf-8"
     )  # Persist the preprocessing manifest in the original JSON format
+
+
+def snapshot_raw_csvs(csv_files: Sequence[Path], root: Path) -> Dict[str, Dict[str, int]]:
+    """
+    Snapshot raw CSV size and nanosecond modification-time metadata using relative paths.
+
+    :param csv_files: Source CSV files whose metadata should be captured.
+    :param root: Raw dataset root used to derive stable relative snapshot keys.
+    :return: Mapping from source-relative path to size and modification-time metadata.
+    """
+
+    snapshot: Dict[str, Dict[str, int]] = {}  # Build the raw-source integrity snapshot incrementally
+    for path in csv_files:  # Capture metadata for every discovered source CSV
+        stat_result = path.stat()  # Read source size and modification timestamp without opening it for writing
+        relative = str(path.relative_to(root)) if path.is_relative_to(root) else str(path)  # Preserve the original relative-key behavior when possible
+        snapshot[relative] = {"size": int(stat_result.st_size), "mtime_ns": int(stat_result.st_mtime_ns)}  # Record the exact integrity fields used originally
+    return snapshot  # Return the complete raw-source metadata snapshot
