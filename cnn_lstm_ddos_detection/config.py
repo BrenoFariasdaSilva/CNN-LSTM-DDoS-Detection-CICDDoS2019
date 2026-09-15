@@ -77,3 +77,12 @@ class Config:
     reuse_sample_cache: bool
     save_derived_data: bool
     target_accuracy: float
+
+
+@dataclass(frozen=True)
+class FileSchema:
+    """Store the discovered label and feature-column mapping for one CSV file."""
+
+    path: Path
+    label_column: str
+    columns_by_key: Mapping[str, str]
