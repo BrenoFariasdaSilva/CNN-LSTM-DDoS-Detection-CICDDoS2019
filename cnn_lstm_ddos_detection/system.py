@@ -112,3 +112,37 @@ def configure_numeric_policy(mixed_precision: bool) -> None:
     else:  # Handle the reproducibility-oriented default policy
         tf.keras.mixed_precision.set_global_policy("float32")  # Preserve float32 as the default numeric policy
         print("[SYSTEM] Numeric policy: float32")  # Report the active default numeric policy
+
+
+def configure_accelerator(allow_cpu: bool, mixed_precision: bool) -> str:
+    """
+    Configure and verify the TensorFlow execution device used by the experiment.
+
+    :param allow_cpu: Whether CPU execution is allowed when no GPU is detected.
+    :param mixed_precision: Whether mixed_float16 should be enabled globally.
+    :return: TensorFlow device name selected for experiment execution.
+    """
+
+    print("[SYSTEM] platform:", platform.platform())  # Report the operating-system platform
+    print("[SYSTEM] machine:", platform.machine())  # Report the processor architecture
+    print("[SYSTEM] Python:", sys.version.split()[0])  # Report the active Python version
+    print("[SYSTEM] TensorFlow:", tf.__version__)  # Report the active TensorFlow version
+    print("[SYSTEM] tensorflow-metal:", package_version("tensorflow-metal"))  # Report the installed Metal plugin version
+    tf.config.set_soft_device_placement(True)  # Preserve TensorFlow soft placement behavior
+    gpus = tf.config.list_physical_devices("GPU")  # Discover physical GPU devices visible to TensorFlow
+    print("[SYSTEM] TensorFlow GPU devices:", gpus)  # Report discovered GPU devices
+    if not gpus:  # Verify if TensorFlow found no GPU devices
+        if not allow_cpu:  # Verify if the user did not explicitly permit CPU execution
+            raise RuntimeError(
+                "No TensorFlow GPU was detected. On Apple Silicon verify tensorflow-metal; "
+                "on Linux verify the NVIDIA driver and TensorFlow CUDA dependencies. Install "
+                "requirements.txt in a clean Python 3.11/3.12 venv, or use --allow-cpu only "
+                "if you intentionally want CPU training."
+            )  # Reject missing GPU acceleration unless CPU fallback was explicitly allowed
+        print("[SYSTEM] WARNING: running on CPU because --allow-cpu was supplied.")  # Report explicit CPU fallback
+        device = "/CPU:0"  # Select the CPU device for the complete run
+    else:  # Handle a TensorFlow-visible GPU on either supported platform
+        device = "/GPU:0"  # Select the first TensorFlow GPU device
+        run_gpu_smoke_test(device)  # Verify that a real operation is placed on the GPU
+    configure_numeric_policy(mixed_precision)  # Configure the requested global numeric policy
+    return device  # Return the verified execution device
