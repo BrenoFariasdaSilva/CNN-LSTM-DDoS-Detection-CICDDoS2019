@@ -55,3 +55,5 @@ PAPER_12_CLASSES: Tuple[str, ...] = (
     "TFTP",
     "UDP-lag",
 )
+
+OMITTED_DEFAULT_CLASSES = {"WebDDoS", "Portmap"}
