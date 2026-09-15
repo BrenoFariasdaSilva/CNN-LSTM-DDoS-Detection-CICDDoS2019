@@ -151,3 +151,17 @@ class Logger:
         """
 
         return self.terminal_is_tty  # Forward the original terminal's interactivity state
+
+
+    def fileno(self: Logger) -> int:
+        """
+        Return the original terminal file descriptor when available.
+
+        :param self: Logger instance queried by file-descriptor-aware libraries.
+        :return: File descriptor for the terminal or persistent log file.
+        """
+
+        try:  # Prefer the original terminal descriptor for console-aware libraries
+            return self.terminal_stream.fileno()  # Return the terminal descriptor when supported
+        except Exception:  # Fall back when detached streams do not expose a descriptor
+            return self.logfile.fileno()  # Return the persistent log-file descriptor
