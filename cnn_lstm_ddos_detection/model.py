@@ -194,3 +194,26 @@ def build_model(cfg: Config, n_features: int, n_classes: int) -> tf.keras.Model:
         metrics=["accuracy"],
     )  # Compile with categorical cross-entropy and accuracy exactly as before
     return model  # Return the compiled model ready for fitting
+
+
+def make_tf_dataset(X: np.ndarray, y: np.ndarray, batch_size: int, training: bool, seed: int) -> tf.data.Dataset:
+    """
+    Build the bounded-memory TensorFlow dataset used for training or evaluation.
+
+    :param X: Model input feature tensor.
+    :param y: One-hot target matrix aligned with X.
+    :param batch_size: Number of samples per TensorFlow batch.
+    :param training: Whether bounded shuffling should be enabled.
+    :param seed: Random seed used by TensorFlow dataset shuffling.
+    :return: Batched and single-batch-prefetched TensorFlow dataset.
+    """
+
+    dataset = tf.data.Dataset.from_tensor_slices((X, y))  # Create a TensorFlow dataset from aligned in-memory feature and target arrays
+    if training:  # Verify if this dataset will be used for model fitting
+        dataset = dataset.shuffle(
+            buffer_size=min(len(y), 100_000),
+            seed=seed,
+            reshuffle_each_iteration=True,
+        )  # Shuffle training rows with the original bounded buffer and seed behavior
+    dataset = dataset.batch(batch_size, drop_remainder=False)  # Batch all rows without dropping the final partial batch
+    return dataset.prefetch(1)  # Prefetch exactly one batch to limit unified-memory pressure
