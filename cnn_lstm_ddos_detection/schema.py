@@ -84,3 +84,18 @@ def discover_csv_files(root: Path) -> List[Path]:
     if not files:  # Verify if recursive discovery returned no usable CSV files
         raise FileNotFoundError(f"No .csv files were found recursively under {root}")  # Reject an invalid or incomplete dataset root
     return files  # Return all source CSV paths in deterministic lexical order
+
+
+def infer_label_column(columns: Sequence[str]) -> str:
+    """
+    Identify and return the exact CSV header used for the label column.
+
+    :param columns: Exact column headers read from one CSV file.
+    :return: Exact original label-column header used in the CSV.
+    """
+
+    mapping = {str(column).strip().lower(): str(column) for column in columns}  # Map normalized candidates back to exact CSV headers
+    for candidate in ("label", "class", "attack", "target"):  # Check supported label-column names in the original priority order
+        if candidate in mapping:  # Verify if the current label candidate exists in this CSV
+            return mapping[candidate]  # Return the exact header so pandas usecols can match whitespace precisely
+    raise ValueError(f"Could not find label column in columns: {list(columns)[:20]}")  # Reject CSV files without a recognizable target column
