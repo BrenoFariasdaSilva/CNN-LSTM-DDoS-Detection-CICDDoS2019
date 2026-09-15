@@ -118,3 +118,34 @@ class EvaluationArtifacts:
     keras_accuracy: float
     probabilities: np.ndarray
     predictions: np.ndarray
+
+
+def build_preprocessing_manifest(feature_names: Sequence[str], feature_count: int, preprocessing_timings: Mapping[str, float], smote_report: Mapping[str, object]) -> Dict[str, object]:
+    """
+    Build the preprocessing manifest persisted for each experiment run.
+
+    :param feature_names: Ordered readable feature names used by the model.
+    :param feature_count: Number of transformed model features.
+    :param preprocessing_timings: Measured preprocessing stage durations.
+    :param smote_report: Training-only SMOTE audit metadata.
+    :return: Preprocessing manifest preserving the original field structure.
+    """
+
+    return {
+        "raw_dataset_modified": False,
+        "split": {"train": 0.70, "validation": 0.15, "test": 0.15},
+        "imputation": "median; fitted on training only",
+        "standardization": "StandardScaler z-score; fitted on training only",
+        "smote": dict(smote_report),
+        "validation_augmented": False,
+        "test_augmented": False,
+        "feature_count": int(feature_count),
+        "feature_names": list(feature_names),
+        "timings": dict(preprocessing_timings),
+        "paper_method_notes": {
+            "class_mapping": "12-class mapping is inferred because the paper does not enumerate its 12 labels.",
+            "sequence_construction": "Feature-axis CNN/LSTM sequence is a reconstruction because no temporal window length/stride is reported.",
+            "architecture_widths": "Layer widths/kernel sizes are configurable reconstruction choices because the paper omits them.",
+            "smote_parameters": "Paper mentions SMOTE but does not publish k or sampling strategy; classic k-neighbor SMOTE is used here.",
+        },
+    }  # Preserve the original preprocessing-manifest content and wording
