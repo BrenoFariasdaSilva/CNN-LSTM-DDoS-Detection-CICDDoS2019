@@ -100,3 +100,19 @@ class MetalSafeDenseReLU(tf.keras.layers.Layer):
         config = super().get_config()  # Retrieve standard Keras layer serialization fields
         config.update({"units": self.units})  # Persist the custom dense width required for deserialization
         return config  # Return the complete serializable layer configuration
+
+    @classmethod
+    def from_config(cls: Type["MetalSafeDenseReLU"], config: Dict[str, Any]) -> "MetalSafeDenseReLU":
+        """
+        Reconstruct the custom layer from its serialized Keras configuration.
+
+        :param cls: MetalSafeDenseReLU class used to reconstruct the layer.
+        :param config: Serialized layer configuration containing the custom unit count.
+        :return: Reconstructed MetalSafeDenseReLU layer.
+        """
+
+        restored = dict(config)  # Copy the serialized configuration so the caller's mapping is not mutated
+        units = int(restored.pop("units"))  # Remove and preserve the custom dense width before base-layer construction
+        layer = cls(**restored)  # Construct the layer through the inherited Keras Layer initializer
+        layer.units = units  # Restore the custom dense width before Keras builds the layer
+        return layer  # Return the deserializable custom layer instance
