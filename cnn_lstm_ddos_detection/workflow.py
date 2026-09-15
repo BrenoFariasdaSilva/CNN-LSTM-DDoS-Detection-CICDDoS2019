@@ -314,3 +314,20 @@ def persist_aggregate_results(results: Sequence[Dict[str, object]], cfg: Config,
     }  # Compute aggregate statistics with the original formulas and fields
     (output_dir / "aggregate_metrics.json").write_text(json.dumps(aggregate, indent=2), encoding="utf-8")  # Persist aggregate experiment metrics
     return aggregate  # Return aggregate metrics for completion reporting
+
+
+def finalize_raw_integrity(raw_snapshot: Dict[str, Dict[str, int]], csv_files: Sequence[Path], data_dir: Path, output_dir: Path) -> None:
+    """
+    Verify raw-source integrity and persist the post-run raw CSV metadata snapshot.
+
+    :param raw_snapshot: Raw-source snapshot captured before pipeline processing.
+    :param csv_files: Ordered source CSV files to verify after all experiments.
+    :param data_dir: Raw dataset root used for relative snapshot keys.
+    :param output_dir: Generated-output directory receiving the post-run snapshot.
+    :return: None.
+    """
+
+    verify_raw_snapshot(raw_snapshot, csv_files, data_dir)  # Compare current source metadata with the pre-run integrity snapshot
+    (output_dir / "raw_dataset_snapshot_after.json").write_text(
+        json.dumps(snapshot_raw_csvs(csv_files, data_dir), indent=2), encoding="utf-8"
+    )  # Persist the post-run raw-source snapshot after successful verification
