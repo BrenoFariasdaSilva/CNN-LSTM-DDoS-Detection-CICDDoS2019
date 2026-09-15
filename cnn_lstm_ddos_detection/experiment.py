@@ -340,3 +340,22 @@ def train_model(cfg: Config, device: str, seed: int, run_dir: Path, arrays: Mode
             custom_objects={"MetalSafeDenseReLU": MetalSafeDenseReLU},
         )  # Reload the validation-best model before held-out evaluation
     return TrainingArtifacts(model, history, train_ds, val_ds, test_ds, training_seconds)  # Return fitted model state and datasets
+
+
+def evaluate_model(model: tf.keras.Model, test_ds: tf.data.Dataset, device: str) -> EvaluationArtifacts:
+    """
+    Evaluate the selected model and predict probabilities on the held-out test partition.
+
+    :param model: Validation-selected Keras model.
+    :param test_ds: Batched held-out test dataset.
+    :param device: TensorFlow device selected for experiment execution.
+    :return: Held-out loss, Keras accuracy, probabilities, and integer predictions.
+    """
+
+    evaluation_started = time.time()  # Start held-out evaluation duration measurement
+    with tf.device(device):  # Execute evaluation and prediction on the selected TensorFlow device
+        test_loss, keras_accuracy = model.evaluate(test_ds, verbose=0)  # Compute categorical loss and Keras accuracy on held-out data
+        probabilities = model.predict(test_ds, verbose=0)  # Predict complete held-out softmax probability vectors
+    print(f"[EVAL] held-out test evaluation completed in {format_duration(time.time()-evaluation_started)}")  # Report held-out evaluation duration
+    predictions = probabilities.argmax(axis=1).astype(np.int32)  # Convert softmax probabilities to integer class predictions
+    return EvaluationArtifacts(float(test_loss), float(keras_accuracy), probabilities, predictions)  # Return all held-out evaluation outputs
