@@ -36,47 +36,27 @@ Assumptions & Notes:
 ================================================================================
 """
 
-import atexit  # For playing a sound when the program finishes
-import datetime  # For getting the current date and time
-import os  # For running a command in the terminal
-import platform  # For getting the operating system name
-import sys  # For system-specific parameters and functions
-from colorama import Style  # For coloring the terminal
-from Logger import Logger  # For logging output to both terminal and file
-from pathlib import Path  # For handling file paths
+from __future__ import annotations
 
+import argparse
+import json
+import time
+from dataclasses import asdict
+from pathlib import Path
+from typing import Dict, List, Sequence, Tuple
 
-# Macros:
-class BackgroundColors:  # Colors for the terminal
-    CYAN = "\033[96m"  # Cyan
-    GREEN = "\033[92m"  # Green
-    YELLOW = "\033[93m"  # Yellow
-    RED = "\033[91m"  # Red
-    BOLD = "\033[1m"  # Bold
-    UNDERLINE = "\033[4m"  # Underline
-    CLEAR_TERMINAL = "\033[H\033[J"  # Clear the terminal
+import numpy as np
+import pandas as pd
 
+from .config import Config
+from .constants import PAPER_12_CLASSES, PROJECT_ROOT
+from .system import configure_accelerator, environment_info
+from .experiment import run_experiment
+from .persistence import save_base_cache_with_eta, snapshot_raw_csvs, verify_raw_snapshot
+from .sampling import build_memory_safe_sample
+from .schema import discover_csv_files, inspect_schemas
+from .timing import format_duration
 
-# Execution Constants:
-VERBOSE = False  # Set to True to output verbose messages
-
-# Logger Setup:
-logger = Logger(f"./Logs/{Path(__file__).stem}.log", clean=True)  # Create a Logger instance
-sys.stdout = logger  # Redirect stdout to the logger
-sys.stderr = logger  # Redirect stderr to the logger
-
-# Sound Constants:
-SOUND_COMMANDS = {
-    "Darwin": "afplay",
-    "Linux": "aplay",
-    "Windows": "start",
-}  # The commands to play a sound for each operating system
-SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"  # The path to the sound file
-
-# RUN_FUNCTIONS:
-RUN_FUNCTIONS = {
-    "Play Sound": True,  # Set to True to play a sound when the program finishes
-}
 
 # Functions Definitions:
 
