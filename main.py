@@ -63,6 +63,27 @@ SOUND_COMMANDS: dict[str, tuple[str, ...]] = {
 # Functions Definitions:
 
 
+def format_execution_duration(seconds: float) -> str:
+    """
+    Format an elapsed duration as days, hours, minutes, and seconds.
+
+    :param seconds: Elapsed duration in seconds.
+    :return: Human-readable elapsed duration.
+    """
+
+    total_seconds = max(int(round(seconds)), 0)  # Normalize the duration to a non-negative whole-second value
+    days, remainder = divmod(total_seconds, 86_400)  # Separate complete days from the remaining seconds
+    hours, remainder = divmod(remainder, 3_600)  # Separate complete hours from the remaining seconds
+    minutes, remaining_seconds = divmod(remainder, 60)  # Separate complete minutes from remaining seconds
+    if days > 0:  # Include days only for multi-day executions
+        return f"{days}d {hours}h {minutes}m {remaining_seconds}s"  # Return the complete multi-day duration
+    if hours > 0:  # Include hours only when the duration reaches one hour
+        return f"{hours}h {minutes}m {remaining_seconds}s"  # Return the complete hourly duration
+    if minutes > 0:  # Include minutes only when the duration reaches one minute
+        return f"{minutes}m {remaining_seconds}s"  # Return the complete minute duration
+    return f"{remaining_seconds}s"  # Return a seconds-only duration for short executions
+
+
 def play_notification_sound(sound_file: Path) -> None:
     """
     Play the bundled completion sound without affecting the experiment exit status.
