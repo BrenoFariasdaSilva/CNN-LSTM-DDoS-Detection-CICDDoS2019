@@ -224,3 +224,40 @@ def validate_sample(features: np.ndarray, labels: np.ndarray) -> None:
         raise RuntimeError(f"Invalid sampled data shapes X={features.shape}, y={labels.shape}")  # Reject malformed or misaligned sampled data
     if set(np.unique(labels).tolist()) != set(range(len(PAPER_12_CLASSES))):  # Verify if every expected integer class ID is present
         raise RuntimeError(f"Sample does not contain all 12 class IDs: {np.unique(labels)}")  # Reject sampled data missing any target class
+
+
+def run_all_experiments(cfg: Config, device: str, features: np.ndarray, labels: np.ndarray, feature_names: Sequence[str], output_dir: Path) -> List[Dict[str, object]]:
+    """
+    Execute every configured repeated run and report cross-run completion ETA.
+
+    :param cfg: Immutable experiment configuration.
+    :param device: TensorFlow device selected for all runs.
+    :param features: Complete sampled real-data feature matrix shared across runs.
+    :param labels: Complete sampled integer-label vector shared across runs.
+    :param feature_names: Ordered readable feature names.
+    :param output_dir: Root generated-output directory for all per-run artifacts.
+    :return: Ordered list of scalar metrics dictionaries, one for each completed run.
+    """
+
+    results: List[Dict[str, object]] = []  # Collect per-run metric dictionaries in execution order
+    run_times: List[float] = []  # Track completed run durations for remaining-run ETA
+    for run_index in range(1, cfg.runs + 1):  # Execute every requested run using one-based run numbering
+        one_run_started = time.time()  # Start wall-clock measurement for this complete run invocation
+        result = run_experiment(
+            run_index=run_index,
+            cfg=cfg,
+            device=device,
+            X=features,
+            y=labels,
+            feature_names=feature_names,
+            output_root=output_dir,
+        )  # Execute split through held-out evaluation for the current run
+        results.append(result)  # Preserve the completed run metrics for summary aggregation
+        run_times.append(time.time() - one_run_started)  # Record this run's complete wall-clock duration
+        remaining_runs = cfg.runs - run_index  # Calculate runs still pending after this completion
+        average_run = float(np.mean(run_times))  # Calculate average duration across completed runs
+        print(
+            f"[ETA][RUNS] completed={run_index}/{cfg.runs} | avg_run={format_duration(average_run)} | "
+            f"remaining_run_ETA={format_duration(average_run * remaining_runs)}"
+        )  # Report repeated-run progress using the original ETA calculation
+    return results  # Return ordered per-run metrics for aggregate persistence
