@@ -201,3 +201,66 @@ def estimate_consumed_bytes(raw_handle: object, chunk_index: int, chunksize: int
         return min(int(raw_handle.tell()), file_size)  # Return consumed bytes reported by the binary file handle
     except Exception:  # Preserve the original fallback for file-position reporting failures
         return min(chunk_index * chunksize * 256, file_size)  # Estimate bytes from rows using the original fallback multiplier
+
+
+def stream_sample_one_file(schema: FileSchema, feature_keys: Sequence[str], chunksize: int, rows_per_class: int, seed: int, scan_progress: ByteProgress, bytes_before_file: int) -> Tuple[Dict[str, np.ndarray], Counter, Counter]:
+    """
+    Stream one CSV and retain the configured rows per target class.
+
+    :param schema: Exact source CSV schema metadata.
+    :param feature_keys: Ordered common normalized feature keys.
+    :param chunksize: Number of CSV rows read per pandas chunk.
+    :param rows_per_class: Maximum retained real rows for each class in this file; zero retains all.
+    :param seed: Random seed dedicated to this source file.
+    :param scan_progress: Shared byte-progress reporter across all source files.
+    :param bytes_before_file: Total source bytes belonging to previously processed files.
+    :return: Per-class retained arrays plus observed target and omitted-class counters.
+    """
+
+    rng = np.random.default_rng(seed)  # Create the same independent per-file generator used by bounded sampling
+    reservoirs_x: Dict[str, Optional[np.ndarray]] = {class_name: None for class_name in PAPER_12_CLASSES}  # Initialize bounded feature reservoirs
+    reservoirs_p: Dict[str, Optional[np.ndarray]] = {class_name: None for class_name in PAPER_12_CLASSES}  # Initialize bounded priority reservoirs
+    unlimited_pieces: Dict[str, List[np.ndarray]] = {class_name: [] for class_name in PAPER_12_CLASSES}  # Initialize uncapped class chunk lists
+    unlimited_retained_total = 0  # Track uncapped retained rows without rescanning accumulated chunk lists
+    observed = Counter()  # Count recognized target-class rows seen in the complete file
+    omitted = Counter()  # Count recognized non-target rows seen in the complete file
+    actual_feature_columns = [schema.columns_by_key[key] for key in feature_keys]  # Resolve exact source headers once per file
+    use_columns = actual_feature_columns + [schema.label_column]  # Read only common features plus the exact label column
+    file_size = schema.path.stat().st_size  # Capture source file size for scan progress
+    with schema.path.open("rb") as raw_handle:  # Open the raw CSV in binary read-only mode
+        reader = pd.read_csv(raw_handle, usecols=use_columns, chunksize=chunksize, low_memory=False)  # Stream source rows without loading the complete file
+        for chunk_index, chunk in enumerate(reader, start=1):  # Process every source chunk in source order
+            labels = canonicalize_labels(chunk[schema.label_column])  # Normalize raw labels for counting and target selection
+            update_observed_counts(labels, observed, omitted)  # Accumulate target and recognized omitted class counts
+            features, target_labels = build_numeric_chunk(chunk, schema, feature_keys, labels)  # Convert target rows to the common numeric schema
+            if len(target_labels) > 0:  # Verify if the chunk contains at least one target row
+                if rows_per_class == 0:  # Verify if explicit retain-all mode is enabled for Linux/full-data execution
+                    collect_unlimited_class_pieces(features, target_labels, unlimited_pieces)  # Preserve every target row without consuming sampling RNG state
+                    unlimited_retained_total += len(target_labels)  # Advance uncapped retained-row progress by this chunk
+                else:  # Handle the existing bounded priority-reservoir sampling path
+                    update_class_reservoirs(features, target_labels, reservoirs_x, reservoirs_p, rows_per_class, rng)  # Update bounded per-class sampling state
+            consumed = estimate_consumed_bytes(raw_handle, chunk_index, chunksize, file_size)  # Estimate source bytes consumed so far
+            if rows_per_class == 0:  # Verify if retained-row progress must be counted from uncapped chunk lists
+                retained_total = unlimited_retained_total  # Reuse the running count of every retained uncapped target row
+            else:  # Handle bounded reservoir progress counting
+                retained_total = sum(0 if value is None else len(value) for value in reservoirs_x.values())  # Count currently retained bounded rows
+            scan_progress.report(
+                bytes_before_file + consumed,
+                detail=f"{schema.path.name} chunk={chunk_index} retained={retained_total:,}",
+            )  # Report global raw-scan progress
+            del chunk, features, target_labels  # Release per-chunk objects before continuing the raw scan
+            gc.collect()  # Encourage prompt release of temporary chunk memory on constrained systems
+    scan_progress.report(bytes_before_file + file_size, detail=f"completed {schema.path.name}", force=True)  # Force a final progress line for this source file
+    if rows_per_class == 0:  # Verify if the source file was processed in retain-all mode
+        result = {
+            class_name: np.concatenate(unlimited_pieces[class_name], axis=0).astype(np.float32, copy=False)
+            for class_name in PAPER_12_CLASSES
+            if unlimited_pieces[class_name]
+        }  # Concatenate each uncapped class once after the complete source file has been streamed
+    else:  # Handle the existing bounded reservoir result
+        result = {
+            class_name: reservoirs_x[class_name]
+            for class_name in PAPER_12_CLASSES
+            if reservoirs_x[class_name] is not None and len(reservoirs_x[class_name]) > 0
+        }  # Remove empty class reservoirs from the returned sample mapping
+    return result, observed, omitted  # Return per-file retained rows and audit counters
