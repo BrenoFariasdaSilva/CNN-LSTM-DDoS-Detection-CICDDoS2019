@@ -420,3 +420,41 @@ Important command-line controls include:
 | `--mixed-precision` | Enable optional mixed precision. |
 
 Run `python main.py --help` for the complete CLI.
+
+## Generated Outputs
+
+At the output root, the project records reproducibility and aggregate artifacts such as:
+
+```text
+config.json
+environment.json
+csv_files.txt
+sampling_report.json
+sampled_X.npy
+sampled_y.npy
+feature_names.json
+raw_dataset_snapshot_before.json
+raw_dataset_snapshot_after.json
+runs_summary.csv
+aggregate_metrics.json
+```
+
+Each run receives a directory such as `run_01_seed_42/`, containing artifacts including:
+
+```text
+model_summary.txt
+best_model.keras
+training_history.csv
+confusion_matrix.csv
+confusion_matrix.png
+classification_report.json
+metrics.json
+preprocessing_manifest.json
+test_predictions.csv
+imputer.joblib
+scaler.joblib
+feature_names.json
+generated_dataset/
+```
+
+The generated dataset directory can contain the standardized/SMOTE training data, standardized validation/test data, split indices, and preprocessing manifest.
