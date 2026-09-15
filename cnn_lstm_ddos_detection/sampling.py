@@ -378,3 +378,50 @@ def combine_class_arrays(class_arrays: Dict[str, np.ndarray], rng: np.random.Gen
     labels = np.concatenate(label_parts, axis=0)  # Concatenate aligned integer labels
     order = rng.permutation(len(labels))  # Draw the final dataset permutation with the existing dataset RNG state
     return features[order], labels[order], final_counts  # Return the same randomized row order used by the original implementation
+
+
+def build_memory_safe_sample(schemas: Sequence[FileSchema], feature_keys: Sequence[str], chunksize: int, rows_per_file_per_class: int, global_class_cap: int, prebalance_downsample: bool, seed: int, root: Path) -> Tuple[np.ndarray, np.ndarray, Dict[str, object]]:
+    """
+    Build the configured real-data sample from every raw CICDDoS2019 CSV file.
+
+    :param schemas: Ordered source-file schema metadata.
+    :param feature_keys: Ordered common normalized feature keys.
+    :param chunksize: Number of CSV rows read per pandas chunk.
+    :param rows_per_file_per_class: Maximum retained rows per class from each source file; zero retains all.
+    :param global_class_cap: Maximum retained rows per class after combining source files; zero disables the cap.
+    :param prebalance_downsample: Whether optional diagnostic pre-balancing should run before splitting.
+    :param seed: Dataset-level sampling seed.
+    :param root: Raw dataset root used for report-relative source paths.
+    :return: Sampled feature matrix, integer-label vector, and sampling audit report.
+    """
+
+    per_class_pieces, file_report, all_observed, all_omitted = collect_file_samples(
+        schemas,
+        feature_keys,
+        chunksize,
+        rows_per_file_per_class,
+        seed,
+        root,
+    )  # Stream every source CSV and collect bounded samples or all target rows
+    rng = np.random.default_rng(seed + 999_983)  # Initialize the original dataset-level post-scan random generator
+    class_arrays, counts_before_global_cap, prebalance_count = build_capped_class_arrays(
+        per_class_pieces,
+        global_class_cap,
+        prebalance_downsample,
+        rng,
+    )  # Apply the original global cap and optional diagnostic pre-balancing
+    features, labels, final_counts = combine_class_arrays(class_arrays, rng)  # Build and shuffle the complete sampled real-data arrays
+    report: Dict[str, object] = {
+        "official_first_day_attacks": list(OFFICIAL_FIRST_DAY_ATTACKS),
+        "official_second_day_attacks": list(OFFICIAL_SECOND_DAY_ATTACKS),
+        "target_classes": list(PAPER_12_CLASSES),
+        "omitted_default_classes": sorted(OMITTED_DEFAULT_CLASSES),
+        "observed_target_counts_all_files": dict(all_observed),
+        "observed_omitted_counts_all_files": dict(all_omitted),
+        "counts_after_per_file_sampling_before_global_cap": counts_before_global_cap,
+        "counts_after_global_cap": final_counts,
+        "diagnostic_prebalance_downsample": bool(prebalance_downsample),
+        "diagnostic_prebalance_rows_per_class": prebalance_count,
+        "files": file_report,
+    }  # Preserve the original sampling report schema
+    return features, labels, report  # Return sampled data and complete sampling audit metadata
