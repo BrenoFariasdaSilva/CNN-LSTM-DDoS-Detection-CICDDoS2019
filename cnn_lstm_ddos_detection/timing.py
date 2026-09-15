@@ -155,3 +155,13 @@ class EpochResourceLogger(tf.keras.callbacks.Callback):
     epoch_times: List[float]
     epoch_start: Optional[float]
 
+    def on_train_begin(self: "EpochResourceLogger", logs: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Record the timestamp when model training begins.
+
+        :param self: Current EpochResourceLogger callback instance.
+        :param logs: Optional Keras callback log dictionary.
+        :return: None.
+        """
+
+        self.train_start = time.time()  # Start total training elapsed-time measurement
