@@ -349,3 +349,33 @@ def report_completion(aggregate: Dict[str, object], pipeline_started: float, out
     print(f"[COMPLETE] Total elapsed: {format_duration(time.time() - pipeline_started)}")  # Report complete workflow duration
     print(f"[COMPLETE] All generated data/results are under: {output_dir}")  # Report generated-output location
     print(f"[COMPLETE] Raw dataset remained read-only: {data_dir}")  # Report raw-source read-only guarantee
+
+
+def run_workflow(args: argparse.Namespace, pipeline_started: float) -> None:
+    """
+    Execute the complete modular CNN-LSTM CICDDoS2019 reproduction workflow.
+
+    :param args: Validated and normalized command-line namespace.
+    :param pipeline_started: Complete pipeline start timestamp captured before argument parsing.
+    :return: None.
+    """
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)  # Create the validated generated-output directory
+    cfg = build_config(args)  # Freeze validated command-line values into the shared Config model
+    persist_configuration(cfg, args.output_dir)  # Persist resolved configuration before runtime-dependent stages
+    print(f"[PATH] main.py directory: {PROJECT_ROOT}")  # Report the project root used for generated-output containment
+    print(f"[PATH] RAW dataset (read-only): {args.data_dir}")  # Report the raw-source root
+    print(f"[PATH] generated output: {args.output_dir}")  # Report the generated-output root
+    device = configure_accelerator(args.allow_cpu, args.mixed_precision)  # Verify and configure the requested TensorFlow execution device
+    (args.output_dir / "environment.json").write_text(
+        json.dumps(environment_info(device), indent=2), encoding="utf-8"
+    )  # Persist runtime environment and accelerator metadata
+    csv_files = discover_csv_files(args.data_dir)  # Discover every raw source CSV recursively
+    print(f"[DATA] Found {len(csv_files)} CSV files across recursive day directories.")  # Report discovered source-file count
+    raw_snapshot = persist_source_inventory(csv_files, args.data_dir, args.output_dir)  # Persist pre-run source inventory and integrity metadata
+    features, labels, feature_names = load_or_build_sample(args, csv_files)  # Build or explicitly reuse the bounded sampled real-data dataset
+    validate_sample(features, labels)  # Confirm sampled shape alignment and full 12-class coverage
+    results = run_all_experiments(cfg, device, features, labels, feature_names, args.output_dir)  # Execute all configured independent experiment runs
+    aggregate = persist_aggregate_results(results, cfg, args.output_dir, pipeline_started)  # Persist cross-run summary and aggregate metrics
+    finalize_raw_integrity(raw_snapshot, csv_files, args.data_dir, args.output_dir)  # Verify raw source metadata remained unchanged and persist the after snapshot
+    report_completion(aggregate, pipeline_started, args.output_dir, args.data_dir)  # Print final metrics and execution locations
