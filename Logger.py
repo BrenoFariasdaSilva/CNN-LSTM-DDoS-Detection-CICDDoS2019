@@ -105,3 +105,22 @@ class Logger:
             except Exception:  # Ignore terminal failures in detached or closing processes
                 pass  # Preserve the caller's original execution behavior
         return len(output)  # Report the accepted character count expected by text streams
+
+
+    def flush(self: Logger) -> None:
+        """
+        Flush both the persistent log and original terminal streams.
+
+        :param self: Logger instance whose streams must be flushed.
+        :return: None.
+        """
+
+        with self.lock:  # Prevent flush operations from interleaving with active writes
+            try:  # Protect the experiment from non-critical log flush failures
+                self.logfile.flush()  # Force buffered log content to disk
+            except Exception:  # Ignore flush failures during interpreter shutdown
+                pass  # Preserve normal shutdown behavior
+            try:  # Protect the experiment from non-critical terminal flush failures
+                self.terminal_stream.flush()  # Force buffered console content to display
+            except Exception:  # Ignore flush failures in detached or closing terminals
+                pass  # Preserve normal shutdown behavior
