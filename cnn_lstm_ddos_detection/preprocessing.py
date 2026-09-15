@@ -236,3 +236,28 @@ def oversample_smote_class(X_train: np.ndarray, y_train: np.ndarray, class_id: i
     del neighbors, class_x  # Release class-specific nearest-neighbor memory before processing the next class
     gc.collect()  # Encourage prompt release of large class-level allocations
     return class_synthetic, class_labels, class_report, generated_total  # Return this class's synthetic data and updated progress state
+
+
+def combine_smote_training(X_train: np.ndarray, y_train: np.ndarray, synthetic_x_parts: List[np.ndarray], synthetic_y_parts: List[np.ndarray], rng: np.random.Generator) -> Tuple[np.ndarray, np.ndarray, Counter]:
+    """
+    Combine original and synthetic training rows and apply the final SMOTE shuffle.
+
+    :param X_train: Standardized original training feature matrix.
+    :param y_train: Original integer training labels.
+    :param synthetic_x_parts: Synthetic feature arrays generated for minority classes.
+    :param synthetic_y_parts: Synthetic integer-label arrays aligned with synthetic features.
+    :param rng: Existing SMOTE random generator whose state must continue unchanged.
+    :return: Shuffled resampled features, labels, and post-SMOTE class counts.
+    """
+
+    if synthetic_x_parts:  # Verify if at least one minority class required augmentation
+        X_resampled = np.concatenate([X_train] + synthetic_x_parts, axis=0).astype(np.float32, copy=False)  # Append all synthetic features after original training rows
+        y_resampled = np.concatenate([y_train.astype(np.int16, copy=False)] + synthetic_y_parts, axis=0)  # Append aligned synthetic labels
+    else:  # Handle an already-balanced training partition
+        X_resampled = X_train.astype(np.float32, copy=False)  # Preserve standardized training features without augmentation
+        y_resampled = y_train.astype(np.int16, copy=False)  # Preserve integer training labels without augmentation
+    order = rng.permutation(len(y_resampled))  # Draw the final SMOTE-training row permutation from the existing RNG state
+    X_resampled = X_resampled[order]  # Shuffle original and synthetic training features together
+    y_resampled = y_resampled[order]  # Apply the identical row permutation to training labels
+    counts_after = Counter(int(value) for value in y_resampled.tolist())  # Count labels after SMOTE for audit metadata
+    return X_resampled, y_resampled, counts_after  # Return the balanced and shuffled training dataset with audit counts
