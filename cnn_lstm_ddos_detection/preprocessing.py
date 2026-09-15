@@ -261,3 +261,32 @@ def combine_smote_training(X_train: np.ndarray, y_train: np.ndarray, synthetic_x
     y_resampled = y_resampled[order]  # Apply the identical row permutation to training labels
     counts_after = Counter(int(value) for value in y_resampled.tolist())  # Count labels after SMOTE for audit metadata
     return X_resampled, y_resampled, counts_after  # Return the balanced and shuffled training dataset with audit counts
+
+
+def build_smote_report(counts_before: Counter, counts_after: Counter, k_neighbors: int, neighbor_query_chunk: int, target_n: int, total_to_generate: int, smote_start: float, per_class_report: Dict[str, object]) -> Dict[str, object]:
+    """
+    Build the complete SMOTE audit report after training-only oversampling finishes.
+
+    :param counts_before: Integer class counts before SMOTE.
+    :param counts_after: Integer class counts after SMOTE and final shuffling.
+    :param k_neighbors: Requested SMOTE neighbor count.
+    :param neighbor_query_chunk: Configured exact-neighbor query chunk size.
+    :param target_n: Majority-class row count used as the oversampling target.
+    :param total_to_generate: Total number of synthetic rows generated.
+    :param smote_start: Global SMOTE start timestamp.
+    :param per_class_report: Per-class SMOTE metadata accumulated in fixed class order.
+    :return: SMOTE report preserving the original keys and values.
+    """
+
+    return {
+        "algorithm": "SMOTE",
+        "scope": "standardized training split only",
+        "k_neighbors_requested": int(k_neighbors),
+        "neighbor_query_chunk": int(neighbor_query_chunk),
+        "target_rows_per_class": int(target_n),
+        "counts_before": {PAPER_12_CLASSES[key]: int(value) for key, value in sorted(counts_before.items())},
+        "counts_after": {PAPER_12_CLASSES[key]: int(value) for key, value in sorted(counts_after.items())},
+        "synthetic_rows": int(total_to_generate),
+        "seconds": float(time.time() - smote_start),
+        "per_class": per_class_report,
+    }  # Preserve the original SMOTE report structure and field meanings
