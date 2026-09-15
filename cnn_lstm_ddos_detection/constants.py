@@ -39,3 +39,4 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 PAPER_TARGET_ACCURACY = 0.9976
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
