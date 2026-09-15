@@ -150,3 +150,44 @@ def load_cached_sample(cache_x: Path, cache_y: Path, cache_features: Path) -> Tu
     labels = np.load(cache_y, mmap_mode=None).astype(np.int16, copy=False)  # Load sampled integer labels exactly as the original cache path does
     feature_names = json.loads(cache_features.read_text(encoding="utf-8"))  # Load ordered readable feature names from JSON
     return features, labels, feature_names  # Return the complete reusable sample cache
+
+
+def build_and_cache_sample(args: argparse.Namespace, csv_files: Sequence[Path], cache_x: Path, cache_y: Path, cache_features: Path, cache_report: Path) -> Tuple[np.ndarray, np.ndarray, List[str]]:
+    """
+    Inspect source schemas, build the sampled real-data matrix, and persist the sample cache.
+
+    :param args: Validated command-line namespace controlling schema and sampling behavior.
+    :param csv_files: Ordered source CSV files discovered recursively.
+    :param cache_x: Destination .npy path for sampled features.
+    :param cache_y: Destination .npy path for sampled labels.
+    :param cache_features: Destination JSON path for readable feature names.
+    :param cache_report: Destination JSON path for the sampling audit report.
+    :return: Sampled feature matrix, label vector, and ordered readable feature names.
+    """
+
+    schemas, feature_keys, display_names = inspect_schemas(
+        csv_files,
+        include_identifiers=args.include_identifiers,
+        keep_inbound=args.keep_inbound,
+    )  # Inspect exact headers and compute common usable features across every source CSV
+    feature_names = [display_names[key] for key in feature_keys]  # Convert normalized feature keys to stable readable names
+    print(f"[DATA] Common usable features across every CSV: {len(feature_keys)}")  # Report the final common feature count
+    features, labels, sampling_report = build_memory_safe_sample(
+        schemas=schemas,
+        feature_keys=feature_keys,
+        chunksize=args.chunksize,
+        rows_per_file_per_class=args.rows_per_file_per_class,
+        global_class_cap=args.global_class_cap,
+        prebalance_downsample=args.prebalance_downsample,
+        seed=args.data_seed,
+        root=args.data_dir,
+    )  # Stream and sample the complete raw dataset without modifying source files
+    print(
+        f"[DATA] Final sampled real-data matrix: rows={len(labels):,}, features={features.shape[1]}, "
+        f"RAM={features.nbytes / 2**30:.2f} GiB"
+    )  # Report final sampled data shape and in-memory feature size
+    save_base_cache_with_eta(features, labels, cache_x, cache_y)  # Persist sampled feature and label arrays with ETA reporting
+    cache_features.write_text(json.dumps(feature_names, indent=2), encoding="utf-8")  # Persist ordered readable feature names
+    cache_report.write_text(json.dumps(sampling_report, indent=2), encoding="utf-8")  # Persist the sampling audit report
+    print(f"[DATA] Base sample cache saved under {args.output_dir}; future runs can use --reuse-sample-cache.")  # Report successful reusable cache persistence
+    return features, labels, feature_names  # Return the newly built sampled dataset
