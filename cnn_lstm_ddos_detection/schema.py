@@ -191,3 +191,15 @@ def inspect_schemas(csv_files: Sequence[Path], include_identifiers: bool, keep_i
         raise RuntimeError("No common usable feature columns exist across all CSV files.")  # Reject incompatible source schemas
     ordered_keys = order_common_feature_keys(schemas[0], common_keys)  # Restore first-file feature ordering after set intersection
     return schemas, ordered_keys, display_names  # Return schema data required by the streaming sampler
+
+
+def canonicalize_labels(series: pd.Series) -> pd.Series:
+    """
+    Convert raw CICDDoS2019 labels to the reproduction's canonical class names.
+
+    :param series: Raw pandas label series from one streamed CSV chunk.
+    :return: Pandas series containing canonical class labels or missing values for unknown labels.
+    """
+
+    normalized = series.astype("string").fillna("").map(norm_token)  # Normalize raw labels while preserving pandas alignment
+    return normalized.map(BASE_LABEL_ALIASES)  # Map normalized aliases to canonical reproduction class names
