@@ -127,3 +127,24 @@ def snapshot_raw_csvs(csv_files: Sequence[Path], root: Path) -> Dict[str, Dict[s
         relative = str(path.relative_to(root)) if path.is_relative_to(root) else str(path)  # Preserve the original relative-key behavior when possible
         snapshot[relative] = {"size": int(stat_result.st_size), "mtime_ns": int(stat_result.st_mtime_ns)}  # Record the exact integrity fields used originally
     return snapshot  # Return the complete raw-source metadata snapshot
+
+
+def verify_raw_snapshot(before: Mapping[str, Mapping[str, int]], csv_files: Sequence[Path], root: Path) -> None:
+    """
+    Verify raw CSV metadata is unchanged after the reproduction workflow finishes.
+
+    :param before: Source metadata snapshot captured before processing.
+    :param csv_files: Source CSV files to snapshot again after processing.
+    :param root: Raw dataset root used for stable relative snapshot keys.
+    :return: None.
+    """
+
+    after = snapshot_raw_csvs(csv_files, root)  # Capture a fresh source snapshot after all experiment work
+    if dict(before) != after:  # Verify if any source path, size, or modification timestamp changed
+        changed = sorted(set(before) | set(after))  # Build the union of snapshot keys to locate differences
+        changed = [key for key in changed if before.get(key) != after.get(key)]  # Retain only entries whose metadata changed
+        raise RuntimeError(
+            "Raw dataset integrity verification failed: source CSV metadata changed during execution: "
+            + ", ".join(changed[:20])
+        )  # Reject any run that violates the raw read-only integrity guarantee
+    print("[RAW-INTEGRITY] Verified: raw CICDDoS2019 CSV sizes/mtimes are unchanged.")  # Report successful post-run source verification
