@@ -79,3 +79,9 @@ This repository reconstructs the **12-class CICDDoS2019 CNN-LSTM experiment** de
 The paper compares a hybrid machine-learning approach with a CNN-LSTM deep-learning architecture. The paper reports **99.84% accuracy for binary classification** and **99.76% accuracy for the 12-class multiclass task**. This project targets the multiclass CNN-LSTM result because it is the more demanding experiment and corresponds to the `PAPER_TARGET_ACCURACY = 0.9976` configured in the implementation.
 
 The goal is **reproduction, not retrospective redesign**. Settings explicitly reported by the paper are retained wherever they are available. Missing details are implemented as explicit, inspectable reconstruction choices rather than being hidden. The raw CICDDoS2019 corpus is treated as read-only, and all generated artifacts remain inside the project output directory.
+
+## Original Paper
+
+> D. S. Rajput and A. K. Upadhyay, “Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection,” *International Journal of Experimental Research and Review*, vol. 46, pp. 253–272, 2024. DOI: [10.52756/ijerr.2024.v46.020](https://doi.org/10.52756/ijerr.2024.v46.020).
+
+The paper uses CICDDoS2019 and proposes a CNN-LSTM model in which convolutional layers perform spatial/feature extraction and LSTM layers model sequential dependencies. The publication reports the CNN-LSTM as the strongest deep-learning approach, with the multiclass experiment reaching **99.76% accuracy**.
