@@ -116,3 +116,17 @@ class MetalSafeDenseReLU(tf.keras.layers.Layer):
         layer = cls(**restored)  # Construct the layer through the inherited Keras Layer initializer
         layer.units = units  # Restore the custom dense width before Keras builds the layer
         return layer  # Return the deserializable custom layer instance
+
+
+def create_metal_safe_dense_relu(units: int, name: Optional[str] = None) -> MetalSafeDenseReLU:
+    """
+    Create an initialized MetalSafeDenseReLU layer without defining a private constructor.
+
+    :param units: Number of output units produced by the dense transformation.
+    :param name: Optional Keras layer name.
+    :return: Initialized custom dense/ReLU layer.
+    """
+
+    layer = MetalSafeDenseReLU(name=name)  # Construct the custom layer through the inherited public Keras initializer
+    layer.units = int(units)  # Store the requested output width before the first build call
+    return layer  # Return the initialized Metal-safe custom layer
