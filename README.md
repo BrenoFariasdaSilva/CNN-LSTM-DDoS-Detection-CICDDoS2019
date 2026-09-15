@@ -5,11 +5,13 @@
 </div>
 
 <div align="center">
-  
+
 ---
 
-Project-Description.
-  
+**Methodology source:** Deepak Singh Rajput and Arvind Kumar Upadhyay, *Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection* (2024), DOI: [10.52756/ijerr.2024.v46.020](https://doi.org/10.52756/ijerr.2024.v46.020).
+
+A reproducible, memory-aware implementation of the paper's 12-class CICDDoS2019 CNN-LSTM experiment, organized as a modular Python project for Apple Silicon and Linux GPU servers. This repository is an independent reproduction and is not an official repository of the paper's authors.
+
 ---
 
 </div>
