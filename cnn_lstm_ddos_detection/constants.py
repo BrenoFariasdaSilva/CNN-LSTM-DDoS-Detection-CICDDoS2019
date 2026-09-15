@@ -40,3 +40,18 @@ from typing import Dict, Tuple
 
 PAPER_TARGET_ACCURACY = 0.9976
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+PAPER_12_CLASSES: Tuple[str, ...] = (
+    "BENIGN",
+    "DrDoS_DNS",
+    "DrDoS_LDAP",
+    "DrDoS_MSSQL",
+    "DrDoS_NetBIOS",
+    "DrDoS_NTP",
+    "DrDoS_SNMP",
+    "DrDoS_SSDP",
+    "DrDoS_UDP",
+    "Syn",
+    "TFTP",
+    "UDP-lag",
+)
