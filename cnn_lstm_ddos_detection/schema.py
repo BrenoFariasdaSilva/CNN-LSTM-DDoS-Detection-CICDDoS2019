@@ -142,3 +142,20 @@ def inspect_single_schema(path: Path, drop_keys: Set[str], display_names: Dict[s
     candidate_keys = set(columns_by_key) - {label_key} - drop_keys  # Compute usable features for this individual CSV
     schema = FileSchema(path=path, label_column=label, columns_by_key=columns_by_key)  # Capture exact per-file schema information
     return schema, candidate_keys  # Return schema metadata and this CSV's candidate feature set
+
+
+def order_common_feature_keys(first_schema: FileSchema, common_keys: Set[str]) -> List[str]:
+    """
+    Order common normalized feature keys according to the first CSV header.
+
+    :param first_schema: Schema of the first discovered CSV file.
+    :param common_keys: Feature keys present and usable in every discovered CSV.
+    :return: Deduplicated common feature-key list in first-file order.
+    """
+
+    ordered_keys = [
+        norm_column_key(column)
+        for column in first_schema.columns_by_key.values()
+        if norm_column_key(column) in common_keys
+    ]  # Preserve the original first-file feature ordering behavior
+    return list(dict.fromkeys(ordered_keys))  # Deduplicate while preserving insertion order
