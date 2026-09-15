@@ -85,3 +85,15 @@ def eta_from_progress(done: float, total: float, elapsed: float) -> Optional[flo
     if rate <= 0:  # Verify if the calculated processing rate is usable
         return None  # Return no ETA for a non-positive processing rate
     return max(0.0, (total - done) / rate)  # Estimate and clamp the remaining duration to zero or greater
+
+
+@dataclass
+class ByteProgress:
+    """Store state for byte-based progress reporting during source-data scans."""
+
+    total_bytes: int
+    label: str
+    start: float
+    last_print: float
+    min_interval: float
+
