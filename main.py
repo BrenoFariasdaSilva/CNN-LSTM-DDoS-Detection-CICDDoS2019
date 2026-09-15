@@ -63,6 +63,26 @@ SOUND_COMMANDS: dict[str, tuple[str, ...]] = {
 # Functions Definitions:
 
 
+def configure_runtime(project_dir: Path) -> Logger:
+    """
+    Configure dual-channel logging and register shutdown handlers.
+
+    :param project_dir: Absolute repository root containing main.py.
+    :return: Logger assigned to both standard output streams.
+    """
+
+    log_file = project_dir / "logs" / "main.log"  # Define the stable runtime log path inside the repository
+    sound_file = project_dir / ".assets" / "Sounds" / "NotificationSound.wav"  # Define the bundled completion-sound path
+    logger = Logger.create(log_file, clean=True)  # Create a fresh log for this execution
+    sys.stdout = logger  # Mirror all standard output to the console and persistent log
+    sys.stderr = logger  # Mirror all standard error to the same console and persistent log
+    atexit.register(logger.close)  # Close the log after all other registered shutdown output is complete
+    atexit.register(play_notification_sound, sound_file)  # Play the completion notification before closing the logger
+    print(f"[RUNTIME] Console logging enabled: {log_file}")  # Record the persistent log destination
+    print(f"[RUNTIME] Completion sound registered: {sound_file}")  # Record the registered notification asset
+    return logger  # Return the configured logger for explicit flushes
+
+
 def main() -> int:
     """
     Configure runtime services and execute the complete reproduction workflow.
