@@ -75,3 +75,24 @@ def package_version(name: str) -> Optional[str]:
         return importlib.metadata.version(name)  # Return the installed distribution version
     except importlib.metadata.PackageNotFoundError:  # Handle packages that are not installed in the environment
         return None  # Preserve the original missing-package representation
+
+
+def run_gpu_smoke_test(device: str) -> None:
+    """
+    Execute and verify a real TensorFlow matrix multiplication on the selected GPU.
+
+    :param device: TensorFlow device name selected for GPU execution.
+    :return: None.
+    """
+
+    with tf.device(device):  # Force the smoke-test operations onto the selected TensorFlow device
+        left = tf.random.uniform((256, 256), dtype=tf.float32)  # Generate the first smoke-test matrix
+        right = tf.random.uniform((256, 256), dtype=tf.float32)  # Generate the second smoke-test matrix
+        product = tf.linalg.matmul(left, right)  # Execute a real matrix multiplication through TensorFlow
+        checksum = float(tf.reduce_sum(product).numpy())  # Materialize the result so device execution actually occurs
+    print(f"[SYSTEM] GPU smoke test device={product.device} checksum={checksum:.3f}")  # Report observed TensorFlow placement
+    if "GPU" not in product.device.upper():  # Verify if TensorFlow placed the smoke-test result on a GPU
+        raise RuntimeError(
+            f"A GPU was listed but the smoke-test operation was placed on {product.device}. "
+            "Refusing to claim GPU acceleration."
+        )  # Reject a falsely advertised GPU configuration
