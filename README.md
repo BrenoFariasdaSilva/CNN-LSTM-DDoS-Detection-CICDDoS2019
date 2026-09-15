@@ -347,3 +347,17 @@ All major controls are overridable inline. For example:
 ```bash
 make run-linux BATCH_SIZE=512 CHUNKSIZE=100000 RUNS=5
 ```
+
+## Installation and Execution
+
+### macOS Apple Silicon — bounded-memory execution
+
+The defaults expect the dataset at `/Users/brenofarias/Downloads/RAW Datasets/CICDDoS2019` and keep the output inside this repository. Override the path when necessary:
+
+```bash
+make run-mac
+```
+
+```bash
+make run-mac MAC_DATA_DIR="/another/path/CICDDoS2019" BATCH_SIZE=128
+```
