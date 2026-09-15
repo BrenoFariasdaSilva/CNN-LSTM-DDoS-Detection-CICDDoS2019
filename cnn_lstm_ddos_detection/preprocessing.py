@@ -191,3 +191,48 @@ def generate_smote_rows(class_x: np.ndarray, neighbors: np.ndarray, n_generate: 
             f"elapsed={format_duration(elapsed)} | ETA={format_duration(eta)} | {class_name}"
         )  # Report synthetic generation progress using the original fields
     return np.concatenate(generated_parts, axis=0), generated_total  # Preserve original one-class concatenation behavior and progress state
+
+
+def oversample_smote_class(X_train: np.ndarray, y_train: np.ndarray, class_id: int, class_name: str, target_n: int, k_neighbors: int, generation_chunk: int, neighbor_query_chunk: int, rng: np.random.Generator, generated_total: int, total_to_generate: int, smote_start: float) -> Tuple[np.ndarray | None, np.ndarray | None, Dict[str, int], int]:
+    """
+    Oversample one training class to the multiclass SMOTE target while preserving RNG order.
+
+    :param X_train: Standardized training feature matrix.
+    :param y_train: Integer training labels aligned with X_train.
+    :param class_id: Integer identifier of the class currently being processed.
+    :param class_name: Canonical class name used in progress and report output.
+    :param target_n: Majority-class row count used as the SMOTE target.
+    :param k_neighbors: Requested number of same-class nearest neighbors.
+    :param generation_chunk: Maximum synthetic rows generated per allocation batch.
+    :param neighbor_query_chunk: Maximum rows queried per nearest-neighbor batch.
+    :param rng: SMOTE random generator shared across classes in fixed class order.
+    :param generated_total: Synthetic rows already generated for earlier classes.
+    :param total_to_generate: Total synthetic rows required across all classes.
+    :param smote_start: Global SMOTE start timestamp used for ETA estimation.
+    :return: Optional synthetic feature/label arrays, per-class report, and updated generated count.
+    """
+
+    class_idx = np.flatnonzero(y_train == class_id)  # Locate standardized training rows belonging to the current class
+    n_current = len(class_idx)  # Capture the current training class size
+    n_generate = target_n - n_current  # Calculate synthetic rows required to match the majority class
+    if n_generate <= 0:  # Verify if the current class already meets the target size
+        class_report = {"before": n_current, "synthetic": 0, "after": n_current, "k_neighbors_used": 0}  # Record that no augmentation was required
+        return None, None, class_report, generated_total  # Advance without consuming random numbers for majority classes
+    if n_current < 2:  # Verify if nearest-neighbor interpolation is possible for the class
+        raise RuntimeError(f"SMOTE cannot operate on class {class_name!r} with only {n_current} sample(s).")  # Reject classes that cannot form a same-class neighbor pair
+    effective_k = min(int(k_neighbors), n_current - 1)  # Clamp requested neighbors to available non-self class rows
+    class_x = X_train[class_idx]  # Materialize standardized rows for this class
+    neighbors, neighbor_seconds = query_smote_neighbors(class_x, effective_k, class_name, neighbor_query_chunk)  # Build the exact same-class nearest-neighbor graph
+    print(
+        f"[SMOTE] {class_name}: exact neighbor graph ready in "
+        f"{format_duration(neighbor_seconds)}; generating {n_generate:,} rows"
+    )  # Preserve the original neighbor-ready status message
+    class_synthetic, generated_total = generate_smote_rows(
+        class_x, neighbors, n_generate, effective_k, generation_chunk, rng, class_name,
+        generated_total, total_to_generate, smote_start,
+    )  # Generate this class's synthetic rows with the shared SMOTE RNG state
+    class_labels = np.full(len(class_synthetic), class_id, dtype=np.int16)  # Build aligned synthetic integer labels
+    class_report = {"before": n_current, "synthetic": n_generate, "after": target_n, "k_neighbors_used": effective_k}  # Record per-class SMOTE details
+    del neighbors, class_x  # Release class-specific nearest-neighbor memory before processing the next class
+    gc.collect()  # Encourage prompt release of large class-level allocations
+    return class_synthetic, class_labels, class_report, generated_total  # Return this class's synthetic data and updated progress state
