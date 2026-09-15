@@ -361,3 +361,27 @@ make run-mac
 ```bash
 make run-mac MAC_DATA_DIR="/another/path/CICDDoS2019" BATCH_SIZE=128
 ```
+
+### Linux SSH server — full-source execution
+
+The Linux defaults expect:
+
+```text
+Dataset: ~/DDoS-Detector/Datasets/CICDDoS2019
+Output:  <repository>/CNN-LSTM-DDoS-Detection-Full
+```
+
+From the project directory:
+
+```bash
+make run-linux
+```
+
+For a long SSH execution:
+
+```bash
+make run-linux DETACH=1
+make tail-log
+```
+
+The output directory is generated from the Makefile's absolute `PROJECT_DIR`, so it remains inside the repository regardless of the caller's current directory.
