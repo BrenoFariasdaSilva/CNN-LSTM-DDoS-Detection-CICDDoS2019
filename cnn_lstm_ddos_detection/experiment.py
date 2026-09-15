@@ -459,3 +459,38 @@ def cleanup_run(data: PreparedRunData, arrays: ModelArrays, training: TrainingAr
     del training.train_ds, training.val_ds, training.test_ds, training.model  # Release TensorFlow datasets and trained model references
     gc.collect()  # Encourage Python to reclaim released per-run memory promptly
     tf.keras.backend.clear_session()  # Clear Keras graph/session state before the next independent run
+
+
+def run_experiment(run_index: int, cfg: Config, device: str, X: np.ndarray, y: np.ndarray, feature_names: Sequence[str], output_root: Path) -> Dict[str, object]:
+    """
+    Execute one complete configured reproduction run and return its held-out metrics.
+
+    :param run_index: One-based run number within the repeated experiment sequence.
+    :param cfg: Validated experiment configuration.
+    :param device: TensorFlow device selected for experiment execution.
+    :param X: Complete sampled real-data feature matrix shared across runs.
+    :param y: Complete sampled integer-label vector shared across runs.
+    :param feature_names: Ordered readable feature names used by the model.
+    :param output_root: Root directory containing all generated experiment outputs.
+    :return: Complete scalar metric dictionary for the run.
+    """
+
+    run_started = time.time()  # Start total per-run duration measurement
+    seed = cfg.base_seed + run_index - 1  # Derive the current run seed exactly as the original implementation
+    run_dir = output_root / f"run_{run_index:02d}_seed_{seed}"  # Preserve the original per-run directory naming convention
+    generated_dir = run_dir / "generated_dataset"  # Resolve the optional transformed-dataset output directory
+    run_dir.mkdir(parents=True, exist_ok=True)  # Ensure the per-run output directory exists
+    print("\n" + "=" * 90 + f"\n[RUN {run_index}/{cfg.runs}] seed={seed} device={device}\n" + "=" * 90)  # Report run identity using the original banner format
+    set_seeds(seed, cfg.deterministic_ops)  # Apply run-specific Python/NumPy/TensorFlow seeds
+    data = prepare_run_data(X, y, cfg, seed, feature_names, generated_dir)  # Execute split, train-only preprocessing, and train-only SMOTE
+    arrays = create_model_arrays(data)  # Convert transformed data to sequence-shaped inputs and one-hot targets
+    training = train_model(cfg, device, seed, run_dir, arrays)  # Fit with validation and reload the validation-best checkpoint
+    evaluation = evaluate_model(training.model, training.test_ds, device)  # Evaluate only on the held-out test partition after training completes
+    metrics = build_metrics(data, evaluation, training, cfg, run_index, seed, device, run_started)  # Compute complete held-out and timing metrics
+    persist_evaluation_outputs(run_dir, feature_names, data, evaluation, metrics)  # Persist the same evaluation artifacts as the original script
+    print(
+        f"[RESULT] accuracy={metrics['accuracy']:.6f} ({100 * metrics['accuracy']:.4f}%) "
+        f"macro_F1={metrics['f1_macro']:.6f} paper_target={100*cfg.target_accuracy:.4f}%"
+    )  # Report the original concise run result line
+    cleanup_run(data, arrays, training, evaluation)  # Release run-specific model and large-array resources
+    return metrics  # Return run metrics for cross-run aggregation
