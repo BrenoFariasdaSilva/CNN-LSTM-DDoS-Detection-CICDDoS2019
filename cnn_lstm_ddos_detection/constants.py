@@ -57,3 +57,7 @@ PAPER_12_CLASSES: Tuple[str, ...] = (
 )
 
 OMITTED_DEFAULT_CLASSES = {"WebDDoS", "Portmap"}
+
+OFFICIAL_FIRST_DAY_ATTACKS = (
+    "PortMap", "NetBIOS", "LDAP", "MSSQL", "UDP", "UDP-Lag", "SYN"
+)
