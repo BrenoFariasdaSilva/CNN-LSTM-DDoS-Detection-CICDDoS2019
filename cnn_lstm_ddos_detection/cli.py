@@ -130,3 +130,31 @@ def resolve_output_dir(path: Path) -> Path:
             f"Received: {resolved}"
         )  # Preserve the original generated-output containment guarantee
     return resolved  # Return the validated absolute output path
+
+
+def validate_args(args: argparse.Namespace) -> None:
+    """
+    Normalize paths and validate command-line values for bounded or uncapped execution.
+
+    :param args: Parsed command-line namespace to normalize and validate in place.
+    :return: None.
+    """
+
+    args.data_dir = args.data_dir.expanduser().resolve()  # Normalize the raw dataset path before validation
+    args.output_dir = resolve_output_dir(args.output_dir.expanduser())  # Normalize and constrain the generated-output path
+    if not args.data_dir.exists() or not args.data_dir.is_dir():  # Verify if the raw dataset root exists and is a directory
+        raise FileNotFoundError(args.data_dir)  # Reject missing or non-directory dataset roots
+    if args.output_dir == args.data_dir or args.output_dir.is_relative_to(args.data_dir):  # Verify if generated output would be placed inside raw data
+        raise ValueError("--output-dir cannot be the raw dataset directory or any of its subdirectories.")  # Preserve the raw-dataset write-protection rule
+    for name in (
+        "chunksize", "batch_size", "epochs", "runs",
+        "smote_k_neighbors", "smote_generation_chunk", "smote_neighbor_query_chunk",
+    ):  # Validate options that must remain strictly positive
+        if getattr(args, name) < 1:  # Verify if the current required-positive argument is invalid
+            raise ValueError(f"--{name.replace('_', '-')} must be >= 1")  # Reject the invalid argument with its CLI spelling
+    if args.rows_per_file_per_class < 0:  # Verify if the optional per-file class cap is negative
+        raise ValueError("--rows-per-file-per-class must be >= 0")  # Preserve zero as the explicit retain-all mode
+    if args.global_class_cap < 0:  # Verify if the optional global class cap is negative
+        raise ValueError("--global-class-cap must be >= 0")  # Reject negative class caps while preserving zero as no cap
+    if not (0 <= args.dropout < 1):  # Verify if dropout lies outside the original valid interval
+        raise ValueError("--dropout must be in [0, 1)")  # Reject invalid dropout values
