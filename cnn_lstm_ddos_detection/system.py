@@ -96,3 +96,19 @@ def run_gpu_smoke_test(device: str) -> None:
             f"A GPU was listed but the smoke-test operation was placed on {product.device}. "
             "Refusing to claim GPU acceleration."
         )  # Reject a falsely advertised GPU configuration
+
+
+def configure_numeric_policy(mixed_precision: bool) -> None:
+    """
+    Configure the TensorFlow global floating-point policy.
+
+    :param mixed_precision: Whether mixed_float16 should be enabled.
+    :return: None.
+    """
+
+    if mixed_precision:  # Verify if optional mixed precision was requested explicitly
+        tf.keras.mixed_precision.set_global_policy("mixed_float16")  # Enable the original optional mixed-precision policy
+        print("[SYSTEM] Mixed precision enabled: mixed_float16")  # Report the active numeric policy
+    else:  # Handle the reproducibility-oriented default policy
+        tf.keras.mixed_precision.set_global_policy("float32")  # Preserve float32 as the default numeric policy
+        print("[SYSTEM] Numeric policy: float32")  # Report the active default numeric policy
