@@ -66,3 +66,15 @@ OFFICIAL_SECOND_DAY_ATTACKS = (
     "NTP", "DNS", "LDAP", "MSSQL", "NetBIOS", "SNMP", "SSDP", "UDP",
     "UDP-Lag", "WebDDoS", "SYN", "TFTP"
 )
+
+DEFAULT_DROP_KEYS = {
+    "flowid",
+    "sourceip",
+    "destinationip",
+    "srcip",
+    "dstip",
+    "timestamp",
+    "simillarhttp",
+    "similarhttp",
+    "inbound",
+}
