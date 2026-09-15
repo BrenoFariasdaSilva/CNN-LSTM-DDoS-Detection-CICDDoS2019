@@ -146,3 +146,24 @@ def configure_accelerator(allow_cpu: bool, mixed_precision: bool) -> str:
         run_gpu_smoke_test(device)  # Verify that a real operation is placed on the GPU
     configure_numeric_policy(mixed_precision)  # Configure the requested global numeric policy
     return device  # Return the verified execution device
+
+
+def set_seeds(seed: int, deterministic_ops: bool) -> None:
+    """
+    Apply one experiment seed across Python, NumPy, and TensorFlow.
+
+    :param seed: Integer random seed for the current experiment run.
+    :param deterministic_ops: Whether TensorFlow deterministic operations should be requested.
+    :return: None.
+    """
+
+    os.environ["PYTHONHASHSEED"] = str(seed)  # Set the Python hash seed value for reproducibility metadata
+    random.seed(seed)  # Seed Python's standard random module
+    np.random.seed(seed)  # Seed NumPy's legacy global random generator
+    tf.keras.utils.set_random_seed(seed)  # Seed TensorFlow and Keras random generators
+    if deterministic_ops:  # Verify if deterministic TensorFlow operations were explicitly requested
+        try:  # Request deterministic operations where the installed TensorFlow build supports them
+            tf.config.experimental.enable_op_determinism()  # Enable deterministic TensorFlow operation selection
+            print("[SYSTEM] TensorFlow deterministic ops enabled.")  # Report successful deterministic-mode activation
+        except Exception as exc:  # Preserve the original non-fatal behavior when deterministic mode is unsupported
+            print(f"[SYSTEM] Could not enable deterministic ops: {exc}")  # Report the unsupported deterministic-mode request
