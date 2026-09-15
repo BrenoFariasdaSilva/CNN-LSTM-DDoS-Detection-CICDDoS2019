@@ -58,3 +58,24 @@ class Logger:
     terminal_stream: TextIO
     terminal_is_tty: bool
     lock: Any
+
+    @classmethod
+
+
+    def create(cls: type[Logger], logfile_path: str | Path, clean: bool = False) -> Logger:
+        """
+        Create a logger connected to the original standard-output terminal.
+
+        :param cls: Logger class used to construct the instance.
+        :param logfile_path: Destination path for the persistent log file.
+        :param clean: Whether to truncate an existing log file before writing.
+        :return: Configured Logger instance.
+        """
+
+        resolved_path = Path(logfile_path).expanduser().resolve()  # Resolve the requested log destination
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure the logs directory exists before opening the file
+        mode = "w" if clean else "a"  # Select truncation or append behavior
+        logfile = resolved_path.open(mode, encoding="utf-8", buffering=1)  # Open a line-buffered UTF-8 log file
+        terminal_stream = sys.__stdout__ if sys.__stdout__ is not None else sys.stdout  # Preserve the original console stream
+        terminal_is_tty = bool(terminal_stream.isatty())  # Detect whether ANSI output is appropriate for the console
+        return cls(resolved_path, logfile, terminal_stream, terminal_is_tty, threading.RLock())  # Build the stream-compatible logger
