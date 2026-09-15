@@ -66,3 +66,25 @@ def metrics_from_predictions(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str
         "recall_weighted": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
         "f1_weighted": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
     }  # Return the exact metric set used by the original implementation
+
+
+def save_confusion(confusion: np.ndarray, output_path: Path) -> None:
+    """
+    Render and save the labeled 12-class held-out confusion matrix.
+
+    :param confusion: Numeric confusion matrix ordered by PAPER_12_CLASSES.
+    :param output_path: Destination PNG file path.
+    :return: None.
+    """
+
+    figure, axis = plt.subplots(figsize=(12, 10))  # Create the original confusion-matrix figure size
+    image = axis.imshow(confusion)  # Render matrix counts with matplotlib's default image mapping
+    figure.colorbar(image, ax=axis)  # Add a color scale beside the matrix
+    axis.set_xticks(np.arange(len(PAPER_12_CLASSES)), labels=PAPER_12_CLASSES, rotation=45, ha="right")  # Label predicted classes on the x-axis
+    axis.set_yticks(np.arange(len(PAPER_12_CLASSES)), labels=PAPER_12_CLASSES)  # Label actual classes on the y-axis
+    axis.set_xlabel("Predicted")  # Preserve the original predicted-axis label
+    axis.set_ylabel("Actual")  # Preserve the original actual-axis label
+    axis.set_title("CICDDoS2019 12-class CNN-LSTM confusion matrix")  # Preserve the original figure title
+    figure.tight_layout()  # Fit labels inside the saved figure bounds
+    figure.savefig(output_path, dpi=180)  # Save the confusion matrix at the original output resolution
+    plt.close(figure)  # Release matplotlib figure resources after persistence
