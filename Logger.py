@@ -140,3 +140,14 @@ class Logger:
                 self.logfile.close()  # Release the persistent log-file handle
             except Exception:  # Ignore close failures during interpreter shutdown
                 pass  # Preserve normal shutdown behavior
+
+
+    def isatty(self: Logger) -> bool:
+        """
+        Report whether the original terminal stream is interactive.
+
+        :param self: Logger instance queried by terminal-aware libraries.
+        :return: True when the original terminal stream is a TTY.
+        """
+
+        return self.terminal_is_tty  # Forward the original terminal's interactivity state
