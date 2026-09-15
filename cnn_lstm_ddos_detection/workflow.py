@@ -288,3 +288,29 @@ def build_runs_summary(results: Sequence[Dict[str, object]]) -> pd.DataFrame:
             for result in results
         ]
     )  # Preserve the original run-summary field selection and ordering
+
+
+def persist_aggregate_results(results: Sequence[Dict[str, object]], cfg: Config, output_dir: Path, pipeline_started: float) -> Dict[str, object]:
+    """
+    Persist runs_summary.csv and aggregate_metrics.json after all repeated runs finish.
+
+    :param results: Ordered completed per-run metric dictionaries.
+    :param cfg: Immutable experiment configuration containing the paper target accuracy.
+    :param output_dir: Root generated-output directory.
+    :param pipeline_started: Complete workflow start timestamp used for aggregate duration.
+    :return: Aggregate metrics dictionary persisted to disk.
+    """
+
+    summary = build_runs_summary(results)  # Build the same compact cross-run summary table as the original script
+    summary.to_csv(output_dir / "runs_summary.csv", index=False)  # Persist the cross-run summary CSV
+    aggregate = {
+        "runs": len(results),
+        "accuracy_mean": float(summary["accuracy"].mean()),
+        "accuracy_std": float(summary["accuracy"].std(ddof=1)) if len(summary) > 1 else 0.0,
+        "f1_macro_mean": float(summary["f1_macro"].mean()),
+        "paper_target_accuracy": cfg.target_accuracy,
+        "closest_run": int(summary.loc[summary["distance_to_paper_target"].idxmin(), "run"]),
+        "pipeline_total_seconds": float(time.time() - pipeline_started),
+    }  # Compute aggregate statistics with the original formulas and fields
+    (output_dir / "aggregate_metrics.json").write_text(json.dumps(aggregate, indent=2), encoding="utf-8")  # Persist aggregate experiment metrics
+    return aggregate  # Return aggregate metrics for completion reporting
