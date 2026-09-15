@@ -315,3 +315,43 @@ def collect_file_samples(schemas: Sequence[FileSchema], feature_keys: Sequence[s
         print(f"      retained from file: {retained}")  # Report retained rows from the current source file
         gc.collect()  # Encourage release of temporary per-file objects
     return per_class_pieces, file_report, all_observed, all_omitted  # Return globally accumulated sampling inputs and audit data
+
+
+def build_capped_class_arrays(per_class_pieces: Dict[str, List[np.ndarray]], global_class_cap: int, prebalance_downsample: bool, rng: np.random.Generator) -> Tuple[Dict[str, np.ndarray], Dict[str, int], Optional[int]]:
+    """
+    Concatenate sampled pieces, apply the global class cap, and optionally pre-balance.
+
+    :param per_class_pieces: Sampled feature-array pieces grouped by canonical class.
+    :param global_class_cap: Maximum real rows retained per class after combining files; zero disables the cap.
+    :param prebalance_downsample: Whether diagnostic equal-size pre-balancing is enabled.
+    :param rng: Dataset-level random generator used for capping and pre-balancing.
+    :return: Final per-class arrays, counts before global cap, and optional pre-balance size.
+    """
+
+    class_arrays: Dict[str, np.ndarray] = {}  # Store concatenated/capped feature arrays for every target class
+    counts_before_global_cap: Dict[str, int] = {}  # Record counts after per-file sampling and before global capping
+    for class_name in PAPER_12_CLASSES:  # Process target classes in the fixed original order
+        pieces = per_class_pieces[class_name]  # Retrieve all sampled file pieces for this class
+        if not pieces:  # Verify if the complete corpus yielded no sample for the required class
+            raise RuntimeError(
+                f"Target class {class_name!r} was not found. Confirm --data-dir points to the full "
+                "two-day CICDDoS2019 CSV dataset."
+            )  # Reject incomplete datasets that cannot represent all target classes
+        array = np.concatenate(pieces, axis=0).astype(np.float32, copy=False)  # Combine this class across every source file
+        counts_before_global_cap[class_name] = int(len(array))  # Record the real-row count before global capping
+        if global_class_cap > 0 and len(array) > global_class_cap:  # Verify if this class exceeds the optional global cap
+            indices = rng.choice(len(array), size=global_class_cap, replace=False)  # Uniformly choose rows without replacement
+            array = array[indices]  # Retain only globally capped real rows
+        class_arrays[class_name] = array  # Preserve the class array after global capping
+    prebalance_count: Optional[int] = None  # Track diagnostic pre-balance size when enabled
+    if prebalance_downsample:  # Verify if optional diagnostic pre-balancing was explicitly requested
+        prebalance_count = min(len(array) for array in class_arrays.values())  # Determine the smallest retained class size
+        print(
+            f"[DATA] Diagnostic pre-balance enabled: downsampling all classes to "
+            f"{prebalance_count:,} BEFORE split. This is not the default best-result path."
+        )  # Report that this non-default diagnostic path is active
+        for class_name, array in list(class_arrays.items()):  # Process classes in insertion order while sharing the original RNG
+            if len(array) > prebalance_count:  # Verify if this class exceeds the diagnostic target size
+                indices = rng.choice(len(array), size=prebalance_count, replace=False)  # Downsample uniformly without replacement
+                class_arrays[class_name] = array[indices]  # Store the diagnostically balanced class array
+    return class_arrays, counts_before_global_cap, prebalance_count  # Return final class arrays and capping metadata
