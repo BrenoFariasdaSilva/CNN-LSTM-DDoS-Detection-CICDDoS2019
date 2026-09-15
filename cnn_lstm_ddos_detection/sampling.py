@@ -85,3 +85,21 @@ def priority_reservoir_merge(current_x: Optional[np.ndarray], current_p: Optiona
         features = features[indices]  # Retain only selected feature rows
         priorities = priorities[indices]  # Retain priorities aligned with selected feature rows
     return features, priorities  # Return the bounded reservoir state
+
+
+def update_observed_counts(labels: pd.Series, observed: Counter, omitted: Counter) -> None:
+    """
+    Update per-file target and omitted-class counts from canonical chunk labels.
+
+    :param labels: Canonicalized labels for one streamed chunk.
+    :param observed: Mutable counter for target-class observations.
+    :param omitted: Mutable counter for recognized labels outside the target 12 classes.
+    :return: None.
+    """
+
+    for label, count in labels.value_counts(dropna=True).items():  # Count each recognized canonical label in the current chunk
+        canonical = str(label)  # Normalize the pandas label value to a regular string
+        if canonical in PAPER_12_CLASSES:  # Verify if the label belongs to the target 12-class reconstruction
+            observed[canonical] += int(count)  # Accumulate target-class observations
+        else:  # Handle recognized dataset classes intentionally omitted from the reconstruction
+            omitted[canonical] += int(count)  # Accumulate omitted-class observations
