@@ -220,3 +220,19 @@ The project expects a local copy of [CICDDoS2019](https://www.unb.ca/cic/dataset
 ### Read-only source protection
 
 The raw dataset directory is never intentionally modified. The program records recursive CSV `size` and `mtime_ns` metadata before and after the experiment and raises an error if they differ.
+
+### Bounded Mac mode
+
+The `make run-mac` target is configured for a 16 GB-class Apple-Silicon machine:
+
+```text
+MAC_ROWS_PER_FILE_PER_CLASS=100000
+MAC_GLOBAL_CLASS_CAP=100000
+BATCH_SIZE=256
+```
+
+Positive sample caps use the existing seeded priority-reservoir logic. These values are Make variables and can be overridden without editing source code:
+
+```bash
+make run-mac MAC_ROWS_PER_FILE_PER_CLASS=50000 MAC_GLOBAL_CLASS_CAP=50000 BATCH_SIZE=128
+```
