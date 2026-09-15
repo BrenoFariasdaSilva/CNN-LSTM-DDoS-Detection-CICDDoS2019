@@ -113,3 +113,20 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument("--target-accuracy", type=float, default=PAPER_TARGET_ACCURACY)
     return parser.parse_args(argv)  # Return parsed values without starting any pipeline stage
+
+
+def resolve_output_dir(path: Path) -> Path:
+    """
+    Resolve and constrain generated output to the directory containing main.py.
+
+    :param path: User-provided output directory path.
+    :return: Resolved output directory inside the project root.
+    """
+
+    resolved = (PROJECT_ROOT / path).resolve() if not path.is_absolute() else path.resolve()  # Resolve relative output paths from the top-level main.py directory
+    if resolved != PROJECT_ROOT and not resolved.is_relative_to(PROJECT_ROOT):  # Verify if the resolved output escapes the project directory
+        raise ValueError(
+            f"--output-dir must be inside the directory containing main.py ({PROJECT_ROOT}). "
+            f"Received: {resolved}"
+        )  # Preserve the original generated-output containment guarantee
+    return resolved  # Return the validated absolute output path
