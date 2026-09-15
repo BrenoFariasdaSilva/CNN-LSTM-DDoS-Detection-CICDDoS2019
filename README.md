@@ -186,3 +186,29 @@ The publication states a 12-class task but does not provide every implementation
 12. `UDP-lag`
 
 `WebDDoS` and `Portmap`/`PortScan` are not part of this reconstructed default 12-class target.
+
+## CNN-LSTM Architecture
+
+The publication does not disclose every width, kernel, sequence-construction, optimizer, epoch, and SMOTE parameter needed for an exact independent rerun. The project therefore exposes these values through the CLI and records them in `config.json`.
+
+The current reconstruction defaults are:
+
+| Component | Default |
+| --- | ---: |
+| First `Conv1D` filters | 64 |
+| Second `Conv1D` filters | 128 |
+| Kernel size | 3 |
+| Pool size | 2 |
+| Dense branch units | 128 |
+| LSTM units | 64 |
+| Post-merge Dense units | 64 |
+| Dropout | 0.0 |
+| Optimizer | Adam |
+| Learning rate | 0.001 |
+| Loss | Categorical cross-entropy |
+| Batch size | 256 |
+| Epochs | 30 |
+| SMOTE neighbors | 5 |
+| Early stopping | Disabled by default (`patience=0`) |
+
+The input feature axis is treated as the CNN/LSTM sequence axis because the paper does not publish an exact temporal window length, stride, or flow grouping procedure.
