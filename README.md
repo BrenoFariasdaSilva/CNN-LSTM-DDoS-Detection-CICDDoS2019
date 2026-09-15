@@ -118,3 +118,52 @@ The paper describes a hybrid CNN-LSTM detector for CICDDoS2019. This implementat
 | Evaluation | Accuracy and class-level performance | Held-out test metrics, confusion matrix, classification report, and predictions. |
 
 A crucial implementation rule is that **validation and test data never participate in SMOTE**, and both the imputer and scaler are fit using the training split only.
+
+## Pipeline
+
+```mermaid
+flowchart TD
+    A[RAW CICDDoS2019<br/>read-only] --> B[Discover all CSV files]
+    B --> C[Stream CSVs in chunks]
+    C --> D{Sampling mode}
+    D -->|Mac / bounded| E[Per-file and global class caps]
+    D -->|Linux / full| F[Retain all target rows<br/>caps = 0]
+    E --> G[Reconstructed 12-class dataset]
+    F --> G
+    G --> H[Stratified split<br/>70% train / 15% validation / 15% test]
+    H --> I[Median imputer<br/>fit TRAIN only]
+    I --> J[Z-score StandardScaler<br/>fit TRAIN only]
+    J --> K[SMOTE<br/>TRAIN only]
+    K --> L[One-hot 12-class labels]
+    L --> M[Conv1D + MaxPooling]
+    M --> N1[Flatten + Dense branch]
+    M --> N2[LSTM branch]
+    N1 --> O[Concatenate]
+    N2 --> O
+    O --> P[Post-merge Dense]
+    P --> Q[12-class Softmax]
+    Q --> R[Categorical cross-entropy training]
+    R --> S[Validation during training]
+    S --> T[Held-out TEST evaluation]
+```
+
+The same sequence in compact form is:
+
+```text
+RAW CICDDoS2019
+→ chunked ingestion
+→ bounded or full target-row retention
+→ 70/15/15 stratified split
+→ TRAIN-fitted median imputation
+→ TRAIN-fitted z-score standardization
+→ TRAIN-only SMOTE
+→ one-hot labels
+→ CNN
+→ parallel Dense + LSTM
+→ concatenation
+→ Dense
+→ 12-class Softmax
+→ categorical cross-entropy
+→ validation
+→ held-out test evaluation
+```
