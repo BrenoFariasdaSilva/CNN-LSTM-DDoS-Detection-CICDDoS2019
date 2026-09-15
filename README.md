@@ -396,3 +396,27 @@ At interpreter shutdown, `atexit` invokes `.assets/Sounds/NotificationSound.wav`
 - `aplay -q` on Linux.
 
 The sound is attempted on successful completion and on exits caused by an exception or CLI termination. Playback is deliberately non-fatal: an unavailable Linux audio command, a headless server, or a missing audio device produces only a log warning and never changes the experiment result or exit status.
+
+## Configuration
+
+Important command-line controls include:
+
+| Option | Purpose |
+| --- | --- |
+| `--data-dir` | Read-only CICDDoS2019 root. |
+| `--output-dir` | Generated output directory; constrained to the project directory. |
+| `--chunksize` | Number of CSV rows read per chunk. |
+| `--rows-per-file-per-class` | Per-file/per-class source-row cap; `0` retains all. |
+| `--global-class-cap` | Combined class cap after all files; `0` disables the cap. |
+| `--reuse-sample-cache` | Reuse `sampled_X.npy` and `sampled_y.npy` when available. |
+| `--batch-size` | TensorFlow training batch size. |
+| `--runs` | Number of independent seeded runs. |
+| `--epochs` | Requested training epochs. |
+| `--smote-k-neighbors` | Exact same-class SMOTE neighbor count. |
+| `--smote-generation-chunk` | Synthetic-row generation chunk size. |
+| `--smote-neighbor-query-chunk` | Exact k-NN query chunk size. |
+| `--allow-cpu` | Permit execution when no TensorFlow GPU is available. |
+| `--deterministic-ops` | Request TensorFlow deterministic operations. |
+| `--mixed-precision` | Enable optional mixed precision. |
+
+Run `python main.py --help` for the complete CLI.
