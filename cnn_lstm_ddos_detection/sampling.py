@@ -133,3 +133,37 @@ def build_numeric_chunk(chunk: pd.DataFrame, schema: FileSchema, feature_keys: S
     features = np.column_stack(numeric_columns).astype(np.float32, copy=False)  # Build the chunk feature matrix
     target_labels = labels.loc[mask].to_numpy(dtype=object)  # Materialize canonical target labels aligned with features
     return features, target_labels  # Return numeric target rows for reservoir sampling
+
+
+def update_class_reservoirs(features: np.ndarray, labels: np.ndarray, reservoirs_x: Dict[str, Optional[np.ndarray]], reservoirs_p: Dict[str, Optional[np.ndarray]], rows_per_class: int, rng: np.random.Generator) -> None:
+    """
+    Update every class reservoir from one numeric streamed chunk.
+
+    :param features: Numeric feature matrix for target rows in the current chunk.
+    :param labels: Canonical target labels aligned with the feature matrix.
+    :param reservoirs_x: Mutable per-class retained feature reservoirs.
+    :param reservoirs_p: Mutable per-class retained priority reservoirs.
+    :param rows_per_class: Maximum retained rows per class for this source file.
+    :param rng: NumPy generator dedicated to this source file.
+    :return: None.
+    """
+
+    for class_name in PAPER_12_CLASSES:  # Process classes in the fixed original class order
+        class_indices = np.flatnonzero(labels == class_name)  # Locate current-chunk rows for this class
+        if class_indices.size == 0:  # Verify if the class is absent from the current chunk
+            continue  # Skip RNG consumption for absent classes exactly as before
+        new_features = features[class_indices]  # Select candidate feature rows for the class
+        new_priorities = rng.random(class_indices.size, dtype=np.float64)  # Draw uniform priorities for every candidate row
+        if len(new_priorities) > rows_per_class:  # Verify if this chunk alone exceeds the per-file class cap
+            keep = np.argpartition(new_priorities, rows_per_class - 1)[:rows_per_class]  # Keep the smallest candidate priorities
+            new_features = new_features[keep]  # Retain feature rows aligned with selected priorities
+            new_priorities = new_priorities[keep]  # Retain the selected priority values
+        retained_features, retained_priorities = priority_reservoir_merge(
+            reservoirs_x[class_name],
+            reservoirs_p[class_name],
+            new_features,
+            new_priorities,
+            rows_per_class,
+        )  # Merge candidates into the bounded class reservoir
+        reservoirs_x[class_name] = retained_features  # Store the updated feature reservoir
+        reservoirs_p[class_name] = retained_priorities  # Store the updated priority reservoir
