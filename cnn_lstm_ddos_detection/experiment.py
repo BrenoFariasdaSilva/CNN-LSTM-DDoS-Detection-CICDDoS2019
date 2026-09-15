@@ -149,3 +149,24 @@ def build_preprocessing_manifest(feature_names: Sequence[str], feature_count: in
             "smote_parameters": "Paper mentions SMOTE but does not publish k or sampling strategy; classic k-neighbor SMOTE is used here.",
         },
     }  # Preserve the original preprocessing-manifest content and wording
+
+
+def split_run_labels(y: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Split sampled labels and materialize integer label vectors for one run.
+
+    :param y: Integer labels for the complete sampled real-data dataset.
+    :param seed: Random seed used for the run's stratified split.
+    :return: Train/validation/test indices followed by their aligned integer labels.
+    """
+
+    split_started = time.time()  # Start split-stage duration measurement
+    train_idx, val_idx, test_idx = split_indices(y, seed)  # Create the run-specific 70/15/15 stratified partition
+    y_train = y[train_idx].astype(np.int16, copy=False)  # Materialize training integer labels without unnecessary copying
+    y_val = y[val_idx].astype(np.int16, copy=False)  # Materialize validation integer labels
+    y_test = y[test_idx].astype(np.int16, copy=False)  # Materialize held-out test integer labels
+    print(
+        f"[SPLIT] train={len(y_train):,} (70%) val={len(y_val):,} (15%) "
+        f"test={len(y_test):,} (15%) | completed in {format_duration(time.time()-split_started)}"
+    )  # Report split sizes and duration using the original format
+    return train_idx, val_idx, test_idx, y_train, y_val, y_test  # Return indices and aligned integer labels
