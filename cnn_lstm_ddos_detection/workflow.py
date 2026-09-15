@@ -101,3 +101,15 @@ def build_config(args: argparse.Namespace) -> Config:
         save_derived_data=not args.no_save_derived_data,
         target_accuracy=args.target_accuracy,
     )  # Preserve the original command-line-to-configuration field mapping
+
+
+def persist_configuration(cfg: Config, output_dir: Path) -> None:
+    """
+    Persist the resolved experiment configuration before runtime execution begins.
+
+    :param cfg: Immutable experiment configuration.
+    :param output_dir: Validated generated-output directory.
+    :return: None.
+    """
+
+    (output_dir / "config.json").write_text(json.dumps(asdict(cfg), indent=2), encoding="utf-8")  # Persist configuration using the original JSON representation
