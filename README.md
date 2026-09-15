@@ -94,3 +94,27 @@ The repository reproduces the paper's best **12-class multiclass CNN-LSTM** path
 2. How close can an independent execution get to the paper's 99.76% multiclass accuracy?
 3. Which experiment details are directly supported by the publication, and which have to be reconstructed?
 4. Can the same code run in constrained Apple-Silicon memory and in a high-memory Linux GPU server without changing the experiment logic?
+
+## Paper Methodology and Project Mapping
+
+The paper describes a hybrid CNN-LSTM detector for CICDDoS2019. This implementation maps that methodology to an auditable pipeline while preserving training/test separation for preprocessing and SMOTE.
+
+| Stage | Paper/reproduction intent | Implementation in this repository |
+| --- | --- | --- |
+| Dataset | CICDDoS2019 | Recursively discovers source CSV files under `--data-dir`; source files are read-only. |
+| Multiclass task | 12-class DDoS classification | Uses the reconstructed 12-class mapping shown below. |
+| Data ingestion | Large CICDDoS2019 flow corpus | Reads CSVs in configurable chunks instead of loading the raw corpus at once. |
+| Sampling | Publication does not provide a complete reproducible sampling recipe | Supports bounded per-file/per-class sampling or full uncapped retention with `0`. |
+| Split | Training, validation and test evaluation | Stratified `70% / 15% / 15%` split. |
+| Missing values | Clean/preprocess traffic records | Median imputation is fit on the training split only, then applied to validation/test. |
+| Standardization | Normalized model inputs | Z-score `StandardScaler` is fit on training only and reused for validation/test. |
+| Class imbalance | SMOTE | Classic multiclass SMOTE is applied **only to the standardized training split**. |
+| Deep feature extraction | CNN | One or two `Conv1D` stages followed by max pooling. |
+| Temporal/sequence modeling | LSTM | LSTM receives the CNN feature maps. |
+| Parallel representation | Hybrid architecture | CNN output also feeds a parallel flattened Dense branch. |
+| Fusion | Combined learned features | Dense and LSTM branches are concatenated. |
+| Classification | Multiclass Softmax | Final Dense Softmax over 12 reconstructed classes. |
+| Loss | Multiclass optimization | Categorical cross-entropy. |
+| Evaluation | Accuracy and class-level performance | Held-out test metrics, confusion matrix, classification report, and predictions. |
+
+A crucial implementation rule is that **validation and test data never participate in SMOTE**, and both the imputer and scaler are fit using the training split only.
