@@ -264,3 +264,54 @@ def stream_sample_one_file(schema: FileSchema, feature_keys: Sequence[str], chun
             if reservoirs_x[class_name] is not None and len(reservoirs_x[class_name]) > 0
         }  # Remove empty class reservoirs from the returned sample mapping
     return result, observed, omitted  # Return per-file retained rows and audit counters
+
+
+def collect_file_samples(schemas: Sequence[FileSchema], feature_keys: Sequence[str], chunksize: int, rows_per_file_per_class: int, seed: int, root: Path) -> Tuple[Dict[str, List[np.ndarray]], List[Dict[str, object]], Counter, Counter]:
+    """
+    Stream all source CSV files and collect bounded or uncapped per-file class rows.
+
+    :param schemas: Ordered source-file schema metadata.
+    :param feature_keys: Ordered common normalized feature keys.
+    :param chunksize: Number of CSV rows read per pandas chunk.
+    :param rows_per_file_per_class: Maximum retained real rows per class from each file; zero retains all.
+    :param seed: Dataset sampling seed.
+    :param root: Raw dataset root used for readable relative paths.
+    :return: Per-class sample pieces, per-file report, total target counts, and total omitted counts.
+    """
+
+    per_class_pieces: Dict[str, List[np.ndarray]] = {class_name: [] for class_name in PAPER_12_CLASSES}  # Collect sampled pieces by target class
+    file_report: List[Dict[str, object]] = []  # Collect auditable per-file sampling metadata
+    all_observed = Counter()  # Accumulate target-class observations across files
+    all_omitted = Counter()  # Accumulate recognized omitted-class observations across files
+    total_bytes = sum(schema.path.stat().st_size for schema in schemas)  # Calculate total source bytes for global scan progress
+    scan_progress = create_byte_progress(total_bytes, "RAW-SCAN")  # Initialize the shared raw-data scan reporter
+    bytes_before = 0  # Track completed source bytes before each file
+    for index, schema in enumerate(schemas, start=1):  # Stream every source CSV in deterministic schema order
+        relative = schema.path.relative_to(root) if schema.path.is_relative_to(root) else schema.path  # Prefer readable paths relative to the dataset root
+        print(f"[DATA] file {index}/{len(schemas)}: {relative}")  # Report the source file being processed
+        sampled, observed, omitted = stream_sample_one_file(
+            schema=schema,
+            feature_keys=feature_keys,
+            chunksize=chunksize,
+            rows_per_class=rows_per_file_per_class,
+            seed=seed + index * 1009,
+            scan_progress=scan_progress,
+            bytes_before_file=bytes_before,
+        )  # Stream and sample the current source file using the original seed derivation
+        bytes_before += schema.path.stat().st_size  # Advance completed-source byte accounting
+        all_observed.update(observed)  # Merge this file's target-class counts
+        all_omitted.update(omitted)  # Merge this file's recognized omitted-class counts
+        retained = {class_name: int(len(sampled[class_name])) if class_name in sampled else 0 for class_name in PAPER_12_CLASSES}  # Record per-class retained counts
+        for class_name, array in sampled.items():  # Preserve each sampled class array for global capping
+            per_class_pieces[class_name].append(array)  # Append this file's retained class sample
+        file_report.append(
+            {
+                "file": str(relative),
+                "observed_target_counts": dict(observed),
+                "retained_counts": retained,
+                "omitted_counts": dict(omitted),
+            }
+        )  # Preserve the original per-file report structure
+        print(f"      retained from file: {retained}")  # Report retained rows from the current source file
+        gc.collect()  # Encourage release of temporary per-file objects
+    return per_class_pieces, file_report, all_observed, all_omitted  # Return globally accumulated sampling inputs and audit data
