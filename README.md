@@ -385,3 +385,14 @@ make tail-log
 ```
 
 The output directory is generated from the Makefile's absolute `PROJECT_DIR`, so it remains inside the repository regardless of the caller's current directory.
+
+## Runtime Logging and Completion Sound
+
+At startup, `main.py` creates a fresh `logs/main.log` and assigns the same `Logger` instance to `sys.stdout` and `sys.stderr`. Every progress message remains visible locally while an ANSI-clean copy is flushed immediately to disk.
+
+At interpreter shutdown, `atexit` invokes `.assets/Sounds/NotificationSound.wav` through:
+
+- `afplay` on macOS;
+- `aplay -q` on Linux.
+
+The sound is attempted on successful completion and on exits caused by an exception or CLI termination. Playback is deliberately non-fatal: an unavailable Linux audio command, a headless server, or a missing audio device produces only a log warning and never changes the experiment result or exit status.
