@@ -301,3 +301,42 @@ def build_callbacks(cfg: Config, run_dir: Path) -> List[tf.keras.callbacks.Callb
             )
         )  # Append the original optional early-stopping configuration
     return callbacks  # Return the ordered callback list
+
+
+def train_model(cfg: Config, device: str, seed: int, run_dir: Path, arrays: ModelArrays) -> TrainingArtifacts:
+    """
+    Build datasets/model, fit with validation, and reload the best validation checkpoint.
+
+    :param cfg: Validated experiment configuration.
+    :param device: TensorFlow device selected for the experiment.
+    :param seed: Current run seed used by training-data shuffling.
+    :param run_dir: Current run output directory.
+    :param arrays: Model-ready sequence inputs and one-hot targets.
+    :return: Trained model, history, datasets, and measured training duration.
+    """
+
+    class_count = len(PAPER_12_CLASSES)  # Use the fixed output-class count for the reconstruction
+    with tf.device(device):  # Build model variables on the selected TensorFlow device
+        model = build_model(cfg, n_features=arrays.X_train_model.shape[1], n_classes=class_count)  # Construct and compile the configured CNN-LSTM model
+    save_model_summary(model, run_dir)  # Persist the model architecture before training starts
+    train_ds = make_tf_dataset(arrays.X_train_model, arrays.y_train_onehot, cfg.batch_size, True, seed)  # Build bounded-shuffle training batches
+    val_ds = make_tf_dataset(arrays.X_val_model, arrays.y_val_onehot, cfg.batch_size, False, seed)  # Build deterministic validation batches
+    test_ds = make_tf_dataset(arrays.X_test_model, arrays.y_test_onehot, cfg.batch_size, False, seed)  # Build deterministic held-out test batches
+    callbacks = build_callbacks(cfg, run_dir)  # Build the original validation/checkpoint callback stack
+    train_started = time.time()  # Start measured model-fitting duration
+    with tf.device(device):  # Execute model fitting on the selected TensorFlow device
+        history = model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=cfg.epochs,
+            callbacks=callbacks,
+            verbose=2,
+        )  # Train with the unaugmented validation partition exactly as before
+    training_seconds = time.time() - train_started  # Record measured model-training duration
+    best_model_path = run_dir / "best_model.keras"  # Resolve the validation-best checkpoint path
+    if best_model_path.exists():  # Verify if checkpointing produced a saved best model
+        model = tf.keras.models.load_model(
+            best_model_path,
+            custom_objects={"MetalSafeDenseReLU": MetalSafeDenseReLU},
+        )  # Reload the validation-best model before held-out evaluation
+    return TrainingArtifacts(model, history, train_ds, val_ds, test_ds, training_seconds)  # Return fitted model state and datasets
