@@ -177,3 +177,32 @@ class EpochResourceLogger(tf.keras.callbacks.Callback):
         """
 
         self.epoch_start = time.time()  # Start per-epoch duration measurement
+
+    def on_epoch_end(self: "EpochResourceLogger", epoch: int, logs: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Report epoch duration, remaining ETA, and process/system memory usage.
+
+        :param self: Current EpochResourceLogger callback instance.
+        :param epoch: Zero-based Keras epoch index.
+        :param logs: Optional Keras callback log dictionary.
+        :return: None.
+        """
+
+        now = time.time()  # Capture one timestamp for epoch and training calculations
+        if self.epoch_start is not None:  # Verify if the epoch-start callback supplied a start timestamp
+            self.epoch_times.append(now - self.epoch_start)  # Record the completed epoch duration
+        rss_gib = self.process.memory_info().rss / (1024 ** 3)  # Read process resident memory in GiB
+        virtual_memory = psutil.virtual_memory()  # Read system-wide memory information
+        completed = epoch + 1  # Convert the zero-based epoch index to a human-readable count
+        average = float(np.mean(self.epoch_times)) if self.epoch_times else 0.0  # Calculate the average observed epoch duration
+        eta = average * max(self.total_epochs - completed, 0)  # Estimate remaining training time using the average epoch duration
+        elapsed = (now - self.train_start) if self.train_start else 0.0  # Calculate total elapsed training time
+        print(
+            f"[ETA][TRAIN] epoch={completed}/{self.total_epochs} | "
+            f"elapsed={format_duration(elapsed)} | ETA={format_duration(eta)} | "
+            f"epoch_avg={format_duration(average)}"
+        )  # Emit the training ETA line
+        print(
+            f"[RESOURCE] epoch={completed} process_RSS={rss_gib:.2f} GiB "
+            f"system_used={virtual_memory.percent:.1f}% available={virtual_memory.available / (1024 ** 3):.2f} GiB"
+        )  # Emit process and system memory information
