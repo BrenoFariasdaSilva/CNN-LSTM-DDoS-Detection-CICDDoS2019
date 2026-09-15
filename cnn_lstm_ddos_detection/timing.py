@@ -144,3 +144,14 @@ def create_byte_progress(total_bytes: int, label: str, min_interval: float = 10.
         last_print=0.0,
         min_interval=float(min_interval),
     )  # Return initialized reporting state while preventing division by zero
+
+
+class EpochResourceLogger(tf.keras.callbacks.Callback):
+    """Report training ETA and memory consumption at the end of every epoch."""
+
+    process: psutil.Process
+    total_epochs: int
+    train_start: Optional[float]
+    epoch_times: List[float]
+    epoch_start: Optional[float]
+
