@@ -484,3 +484,8 @@ The repository is built to investigate the paper's reported CNN-LSTM performance
 | **12-class multiclass CNN-LSTM targeted here** | **99.76%** |
 
 Actual results depend on the reconstructed settings, source files, software/hardware environment, and stochastic training behavior. Generated `metrics.json`, `runs_summary.csv`, and `aggregate_metrics.json` should be used when reporting results from this implementation.
+
+## References
+
+1. D. S. Rajput and A. K. Upadhyay, “Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection,” *International Journal of Experimental Research and Review*, vol. 46, pp. 253–272, 2024. [https://doi.org/10.52756/ijerr.2024.v46.020](https://doi.org/10.52756/ijerr.2024.v46.020)
+2. Canadian Institute for Cybersecurity, University of New Brunswick, “DDoS 2019 (CICDDoS2019).” [https://www.unb.ca/cic/datasets/ddos-2019.html](https://www.unb.ca/cic/datasets/ddos-2019.html)
