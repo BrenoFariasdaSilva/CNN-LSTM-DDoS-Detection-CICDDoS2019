@@ -209,3 +209,18 @@ def load_or_build_sample(args: argparse.Namespace, csv_files: Sequence[Path]) ->
     if args.reuse_sample_cache and cache_x.exists() and cache_y.exists() and cache_features.exists():  # Verify if explicit reuse was requested and the required cache files exist
         return load_cached_sample(cache_x, cache_y, cache_features)  # Reuse the existing sampled dataset without rescanning source contents
     return build_and_cache_sample(args, csv_files, cache_x, cache_y, cache_features, cache_report)  # Build and persist a fresh sampled dataset
+
+
+def validate_sample(features: np.ndarray, labels: np.ndarray) -> None:
+    """
+    Validate sampled array alignment and complete 12-class integer-label coverage.
+
+    :param features: Sampled real-data feature matrix.
+    :param labels: Sampled integer-label vector aligned with features.
+    :return: None.
+    """
+
+    if features.ndim != 2 or len(features) != len(labels):  # Verify if sampled features are two-dimensional and row-aligned with labels
+        raise RuntimeError(f"Invalid sampled data shapes X={features.shape}, y={labels.shape}")  # Reject malformed or misaligned sampled data
+    if set(np.unique(labels).tolist()) != set(range(len(PAPER_12_CLASSES))):  # Verify if every expected integer class ID is present
+        raise RuntimeError(f"Sample does not contain all 12 class IDs: {np.unique(labels)}")  # Reject sampled data missing any target class
