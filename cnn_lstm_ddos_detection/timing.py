@@ -67,3 +67,21 @@ def format_duration(seconds: Optional[float]) -> str:
     if minutes:  # Verify if the duration spans at least one complete minute
         return f"{minutes}m {secs:02d}s"  # Return the minute-level duration format
     return f"{secs}s"  # Return a seconds-only duration for short intervals
+
+
+def eta_from_progress(done: float, total: float, elapsed: float) -> Optional[float]:
+    """
+    Estimate remaining seconds from completed work and elapsed time.
+
+    :param done: Amount of work completed so far.
+    :param total: Total amount of work expected.
+    :param elapsed: Elapsed time in seconds.
+    :return: Estimated remaining seconds or None when an estimate is unavailable.
+    """
+
+    if done <= 0 or total <= 0 or elapsed <= 0:  # Verify if enough positive progress information exists
+        return None  # Return no ETA until a meaningful rate can be calculated
+    rate = done / elapsed  # Calculate the observed processing rate
+    if rate <= 0:  # Verify if the calculated processing rate is usable
+        return None  # Return no ETA for a non-positive processing rate
+    return max(0.0, (total - done) / rate)  # Estimate and clamp the remaining duration to zero or greater
