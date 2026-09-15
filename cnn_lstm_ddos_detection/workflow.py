@@ -191,3 +191,21 @@ def build_and_cache_sample(args: argparse.Namespace, csv_files: Sequence[Path], 
     cache_report.write_text(json.dumps(sampling_report, indent=2), encoding="utf-8")  # Persist the sampling audit report
     print(f"[DATA] Base sample cache saved under {args.output_dir}; future runs can use --reuse-sample-cache.")  # Report successful reusable cache persistence
     return features, labels, feature_names  # Return the newly built sampled dataset
+
+
+def load_or_build_sample(args: argparse.Namespace, csv_files: Sequence[Path]) -> Tuple[np.ndarray, np.ndarray, List[str]]:
+    """
+    Reuse the sampled dataset when explicitly requested and complete, otherwise rebuild it.
+
+    :param args: Validated command-line namespace controlling cache reuse and sampling.
+    :param csv_files: Ordered source CSV files used when a cache rebuild is required.
+    :return: Sampled feature matrix, label vector, and ordered readable feature names.
+    """
+
+    cache_x = args.output_dir / "sampled_X.npy"  # Resolve the original sampled feature-cache filename
+    cache_y = args.output_dir / "sampled_y.npy"  # Resolve the original sampled label-cache filename
+    cache_features = args.output_dir / "feature_names.json"  # Resolve the original sampled feature-name cache filename
+    cache_report = args.output_dir / "sampling_report.json"  # Resolve the original sampling-report filename
+    if args.reuse_sample_cache and cache_x.exists() and cache_y.exists() and cache_features.exists():  # Verify if explicit reuse was requested and the required cache files exist
+        return load_cached_sample(cache_x, cache_y, cache_features)  # Reuse the existing sampled dataset without rescanning source contents
+    return build_and_cache_sample(args, csv_files, cache_x, cache_y, cache_features, cache_report)  # Build and persist a fresh sampled dataset
