@@ -184,3 +184,20 @@ def collect_unlimited_class_pieces(features: np.ndarray, labels: np.ndarray, cla
         if class_indices.size == 0:  # Verify if the class is absent from the current chunk
             continue  # Skip empty class pieces without allocating an array
         class_pieces[class_name].append(features[class_indices])  # Retain every target row for this class without sampling
+
+
+def estimate_consumed_bytes(raw_handle: object, chunk_index: int, chunksize: int, file_size: int) -> int:
+    """
+    Estimate source bytes consumed by a pandas CSV chunk reader.
+
+    :param raw_handle: Binary source-file handle used by pandas.
+    :param chunk_index: One-based chunk index currently completed.
+    :param chunksize: Configured pandas chunk row count.
+    :param file_size: Total size of the current source file in bytes.
+    :return: Estimated consumed bytes clamped to the source file size.
+    """
+
+    try:  # Prefer the underlying file handle position when pandas exposes it reliably
+        return min(int(raw_handle.tell()), file_size)  # Return consumed bytes reported by the binary file handle
+    except Exception:  # Preserve the original fallback for file-position reporting failures
+        return min(chunk_index * chunksize * 256, file_size)  # Estimate bytes from rows using the original fallback multiplier
