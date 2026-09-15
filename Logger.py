@@ -79,3 +79,29 @@ class Logger:
         terminal_stream = sys.__stdout__ if sys.__stdout__ is not None else sys.stdout  # Preserve the original console stream
         terminal_is_tty = bool(terminal_stream.isatty())  # Detect whether ANSI output is appropriate for the console
         return cls(resolved_path, logfile, terminal_stream, terminal_is_tty, threading.RLock())  # Build the stream-compatible logger
+
+
+    def write(self: Logger, message: str) -> int:
+        """
+        Write one stream fragment to the terminal and cleaned log file.
+
+        :param self: Logger instance receiving the stream fragment.
+        :param message: Text fragment supplied by print or another stream writer.
+        :return: Number of characters accepted from the original message.
+        """
+
+        output = str(message)  # Normalize the incoming stream fragment without changing newline placement
+        clean_output = ANSI_ESCAPE_REGEX.sub("", output)  # Remove terminal escape sequences from the persistent copy
+        with self.lock:  # Serialize terminal and file writes from callbacks or worker threads
+            try:  # Protect the experiment from non-critical log-file failures
+                self.logfile.write(clean_output)  # Persist the ANSI-clean stream fragment
+                self.logfile.flush()  # Keep the log file current during long-running experiments
+            except Exception:  # Ignore logging failures so they do not terminate model execution
+                pass  # Preserve the caller's original execution behavior
+            try:  # Protect the experiment from non-critical terminal failures
+                terminal_output = output if self.terminal_is_tty else clean_output  # Preserve ANSI only for interactive terminals
+                self.terminal_stream.write(terminal_output)  # Mirror the same stream fragment to the console
+                self.terminal_stream.flush()  # Display progress messages immediately
+            except Exception:  # Ignore terminal failures in detached or closing processes
+                pass  # Preserve the caller's original execution behavior
+        return len(output)  # Report the accepted character count expected by text streams
