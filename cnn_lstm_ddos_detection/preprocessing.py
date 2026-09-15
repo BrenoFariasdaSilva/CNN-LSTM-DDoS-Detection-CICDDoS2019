@@ -119,3 +119,35 @@ def preprocess_arrays(X: np.ndarray, train_idx: np.ndarray, val_idx: np.ndarray,
     timings["standardizer_validation_test_seconds"] = time.time() - stage  # Record validation/test standardization duration
     print(f"[PREPROCESS] applied training standardizer to validation/test in {format_duration(timings['standardizer_validation_test_seconds'])}")  # Report non-training standardization duration
     return X_train, X_val, X_test, imputer, scaler, timings  # Return transformed splits and fitted train-only preprocessing state
+
+
+def query_smote_neighbors(class_x: np.ndarray, k: int, class_name: str, neighbor_query_chunk: int) -> Tuple[np.ndarray, float]:
+    """
+    Build and query the exact same-class k-nearest-neighbor graph in bounded chunks.
+
+    :param class_x: Standardized training rows belonging to one target class.
+    :param k: Effective number of same-class neighbors excluding each sample itself.
+    :param class_name: Canonical class name used in progress messages.
+    :param neighbor_query_chunk: Maximum number of class rows queried per nearest-neighbor batch.
+    :return: Neighbor-index matrix and total graph-construction duration in seconds.
+    """
+
+    neighbor_started = time.time()  # Start nearest-neighbor graph timing before estimator construction
+    estimator = NearestNeighbors(n_neighbors=k + 1, metric="euclidean", algorithm="brute", n_jobs=-1)  # Create the original exact brute-force neighbor estimator
+    estimator.fit(class_x)  # Fit the estimator to this class's standardized training rows only
+    n_current = len(class_x)  # Capture current class size for allocation and progress
+    query_chunk = min(int(neighbor_query_chunk), n_current)  # Bound query size to the actual class row count
+    neighbors = np.empty((n_current, k), dtype=np.int32)  # Allocate exact same-class neighbor indices excluding self
+    query_started = time.time()  # Start bounded neighbor-query timing
+    for query_start in range(0, n_current, query_chunk):  # Query class rows in bounded batches to limit memory use
+        query_end = min(query_start + query_chunk, n_current)  # Clamp the current query endpoint to the class size
+        batch_neighbors = estimator.kneighbors(class_x[query_start:query_end], return_distance=False)[:, 1:]  # Query exact neighbors and remove the self neighbor
+        neighbors[query_start:query_end] = batch_neighbors.astype(np.int32, copy=False)  # Store bounded-query neighbor indices
+        elapsed_query = time.time() - query_started  # Calculate elapsed neighbor-query time
+        eta_query = eta_from_progress(query_end, n_current, elapsed_query)  # Estimate remaining neighbor-query time
+        print(
+            f"[ETA][SMOTE-KNN] {class_name}: {query_end:,}/{n_current:,} "
+            f"({100*query_end/n_current:.1f}%) | elapsed={format_duration(elapsed_query)} | "
+            f"ETA={format_duration(eta_query)}"
+        )  # Report exact-neighbor query progress
+    return neighbors, time.time() - neighbor_started  # Return the complete neighbor graph and construction duration
