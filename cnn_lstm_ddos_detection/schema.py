@@ -59,3 +59,14 @@ def norm_token(value: object) -> str:
     """
 
     return re.sub(r"[^A-Z0-9]+", "", str(value).strip().upper())  # Normalize labels exactly as the original implementation
+
+
+def norm_column_key(name: object) -> str:
+    """
+    Normalize an arbitrary CSV column name to a lowercase alphanumeric key.
+
+    :param name: Raw CSV column name to normalize.
+    :return: Normalized lowercase alphanumeric column key.
+    """
+
+    return re.sub(r"[^a-z0-9]+", "", str(name).strip().lower())  # Normalize headers while preserving exact names elsewhere
