@@ -52,3 +52,26 @@ class MetalSafeDenseReLU(tf.keras.layers.Layer):
     kernel: tf.Variable
     bias: tf.Variable
 
+    def build(self: "MetalSafeDenseReLU", input_shape: Any) -> None:
+        """
+        Create trainable kernel and bias weights after the input feature size is known.
+
+        :param self: Current MetalSafeDenseReLU layer instance.
+        :param input_shape: TensorFlow/Keras input shape supplied during layer building.
+        :return: None.
+        """
+
+        input_dim = int(input_shape[-1])  # Read the flattened input width used by the dense transform
+        self.kernel = self.add_weight(
+            name="kernel",
+            shape=(input_dim, self.units),
+            initializer="glorot_uniform",
+            trainable=True,
+        )  # Create the trainable dense kernel with the original initializer
+        self.bias = self.add_weight(
+            name="bias",
+            shape=(self.units,),
+            initializer="zeros",
+            trainable=True,
+        )  # Create the trainable dense bias with the original initializer
+        super().build(input_shape)  # Mark the Keras layer as built through the base implementation
