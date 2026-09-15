@@ -124,3 +124,23 @@ class ByteProgress:
             f"ETA={format_duration(eta)}{suffix}"
         )  # Emit the original byte-progress fields
         self.last_print = now  # Record the report timestamp for interval throttling
+
+
+def create_byte_progress(total_bytes: int, label: str, min_interval: float = 10.0) -> ByteProgress:
+    """
+    Create a byte-progress reporter with initialized timing state.
+
+    :param total_bytes: Total byte count expected across the scan.
+    :param label: Progress label shown in ETA messages.
+    :param min_interval: Minimum number of seconds between non-forced reports.
+    :return: Initialized ByteProgress reporter.
+    """
+
+    now = time.time()  # Capture the scan start timestamp once
+    return ByteProgress(
+        total_bytes=max(int(total_bytes), 1),
+        label=label,
+        start=now,
+        last_print=0.0,
+        min_interval=float(min_interval),
+    )  # Return initialized reporting state while preventing division by zero
