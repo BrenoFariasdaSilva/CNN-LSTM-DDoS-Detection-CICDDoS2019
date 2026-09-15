@@ -84,3 +84,15 @@ class PreparedRunData:
     scaler: StandardScaler
     smote_report: Dict[str, object]
     preprocessing_manifest: Dict[str, object]
+
+
+@dataclass
+class ModelArrays:
+    """Store sequence-shaped model inputs and one-hot targets for one experiment run."""
+
+    X_train_model: np.ndarray
+    X_val_model: np.ndarray
+    X_test_model: np.ndarray
+    y_train_onehot: np.ndarray
+    y_val_onehot: np.ndarray
+    y_test_onehot: np.ndarray
