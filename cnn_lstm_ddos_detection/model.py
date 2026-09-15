@@ -130,3 +130,16 @@ def create_metal_safe_dense_relu(units: int, name: Optional[str] = None) -> Meta
     layer = MetalSafeDenseReLU(name=name)  # Construct the custom layer through the inherited public Keras initializer
     layer.units = int(units)  # Store the requested output width before the first build call
     return layer  # Return the initialized Metal-safe custom layer
+
+
+def build_optimizer(cfg: Config) -> tf.keras.optimizers.Optimizer:
+    """
+    Build the configured optimizer using the original Adam-or-SGD selection logic.
+
+    :param cfg: Validated experiment configuration.
+    :return: Configured TensorFlow/Keras optimizer instance.
+    """
+
+    if cfg.optimizer == "adam":  # Verify if Adam is the configured optimizer
+        return tf.keras.optimizers.Adam(learning_rate=cfg.learning_rate)  # Create Adam with the configured learning rate
+    return tf.keras.optimizers.SGD(learning_rate=cfg.learning_rate)  # Preserve SGD as the only alternative optimizer path
