@@ -63,6 +63,35 @@ SOUND_COMMANDS: dict[str, tuple[str, ...]] = {
 # Functions Definitions:
 
 
+def play_notification_sound(sound_file: Path) -> None:
+    """
+    Play the bundled completion sound without affecting the experiment exit status.
+
+    :param sound_file: Absolute path to the bundled WAV notification file.
+    :return: None.
+    """
+
+    current_os = platform.system()  # Detect the operating system used for this execution
+    command_parts = SOUND_COMMANDS.get(current_os)  # Select the supported system audio command
+    if command_parts is None:  # Verify that the current platform has a configured player
+        print(f"[SOUND] No completion-sound command is configured for {current_os}.")  # Report the unsupported platform
+        return  # Skip playback without changing the experiment result
+    if not sound_file.is_file():  # Verify that the bundled WAV asset exists
+        print(f"[SOUND] Notification file not found: {sound_file}")  # Report the missing repository asset
+        return  # Skip playback without changing the experiment result
+    executable = shutil.which(command_parts[0])  # Resolve the platform audio command from PATH
+    if executable is None:  # Verify that the required system player is installed
+        print(f"[SOUND] {command_parts[0]} is unavailable; completion sound skipped.")  # Report the optional missing utility
+        return  # Skip playback without changing the experiment result
+    command = [executable, *command_parts[1:], str(sound_file)]  # Build an argument-safe playback command
+    try:  # Prevent optional audio playback from masking the experiment outcome
+        completed = subprocess.run(command, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)  # Play the WAV file with bounded execution time
+        if completed.returncode != 0:  # Detect headless servers or unavailable audio devices
+            print(f"[SOUND] Playback command exited with status {completed.returncode}; experiment results are unaffected.")  # Report non-fatal playback failure
+    except Exception as exception:  # Catch optional playback failures during interpreter shutdown
+        print(f"[SOUND] Completion sound could not be played: {exception}")  # Report the non-fatal playback error
+
+
 def configure_runtime(project_dir: Path) -> Logger:
     """
     Configure dual-channel logging and register shutdown handlers.
