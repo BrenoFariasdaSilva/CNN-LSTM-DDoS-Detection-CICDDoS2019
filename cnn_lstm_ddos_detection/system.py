@@ -167,3 +167,26 @@ def set_seeds(seed: int, deterministic_ops: bool) -> None:
             print("[SYSTEM] TensorFlow deterministic ops enabled.")  # Report successful deterministic-mode activation
         except Exception as exc:  # Preserve the original non-fatal behavior when deterministic mode is unsupported
             print(f"[SYSTEM] Could not enable deterministic ops: {exc}")  # Report the unsupported deterministic-mode request
+
+
+def environment_info(device: str) -> Dict[str, object]:
+    """
+    Collect runtime environment metadata for experiment auditability.
+
+    :param device: TensorFlow device selected for experiment execution.
+    :return: Dictionary containing runtime, package, device, and memory metadata.
+    """
+
+    virtual_memory = psutil.virtual_memory()  # Read total system memory for the environment record
+    return {
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python": sys.version,
+        "tensorflow": tf.__version__,
+        "tensorflow_metal": package_version("tensorflow-metal"),
+        "numpy": np.__version__,
+        "pandas": pd.__version__,
+        "device_selected": device,
+        "physical_gpus": [str(device_info) for device_info in tf.config.list_physical_devices("GPU")],
+        "system_ram_gib": virtual_memory.total / (1024 ** 3),
+    }  # Return metadata using the original environment-information keys
