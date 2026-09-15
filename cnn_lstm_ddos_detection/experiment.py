@@ -237,3 +237,21 @@ def prepare_run_data(X: np.ndarray, y: np.ndarray, cfg: Config, seed: int, featu
         smote_report=smote_report,
         preprocessing_manifest=preprocessing_manifest,
     )  # Return transformed data and fitted preprocessing state for model execution
+
+
+def create_model_arrays(data: PreparedRunData) -> ModelArrays:
+    """
+    Add the feature-sequence channel axis and one-hot encode all three target partitions.
+
+    :param data: Prepared transformed run data.
+    :return: Sequence-shaped feature tensors and one-hot target matrices.
+    """
+
+    X_train_model = data.X_train_smote[..., None]  # Treat feature positions as the model sequence axis with one scalar channel
+    X_val_model = data.X_val[..., None]  # Apply the same sequence representation to validation features
+    X_test_model = data.X_test[..., None]  # Apply the same sequence representation to held-out test features
+    class_count = len(PAPER_12_CLASSES)  # Use the fixed 12-class reconstruction size
+    y_train_onehot = tf.keras.utils.to_categorical(data.y_train_smote, num_classes=class_count).astype(np.float32, copy=False)  # One-hot encode SMOTE-balanced training labels
+    y_val_onehot = tf.keras.utils.to_categorical(data.y_val, num_classes=class_count).astype(np.float32, copy=False)  # One-hot encode unaugmented validation labels
+    y_test_onehot = tf.keras.utils.to_categorical(data.y_test, num_classes=class_count).astype(np.float32, copy=False)  # One-hot encode unaugmented held-out test labels
+    return ModelArrays(X_train_model, X_val_model, X_test_model, y_train_onehot, y_val_onehot, y_test_onehot)  # Return all model-ready arrays
