@@ -1,49 +1,38 @@
 """
 ================================================================================
-<PROJECT OR SCRIPT TITLE>
+DUAL-CHANNEL CONSOLE AND FILE LOGGER
 ================================================================================
 Author      : Breno Farias da Silva
-Created     : <YYYY-MM-DD>
+Created     : 2026-09-15
 Description :
-    <Provide a concise and complete overview of what this script does.>
-    <Mention its purpose, scope, and relevance to the larger project.>
+    Provides a stream-compatible logger that mirrors program output to the active
+    terminal and to an ANSI-clean UTF-8 log file. It is used by the project entry
+    point to preserve live console output while recording complete experiment logs.
 
     Key features include:
-        - <Feature 1 — e.g., automatic data loading and preprocessing>
-        - <Feature 2 — e.g., model training and evaluation>
-        - <Feature 3 — e.g., visualization or report generation>
-        - <Feature 4 — e.g., logging or notification system>
-        - <Feature 5 — e.g., integration with other modules or datasets>
+        - Mirrors stdout and stderr messages to the console and a persistent log file.
+        - Removes ANSI terminal escape sequences from the file copy only.
+        - Flushes output immediately and supports common stream inspection methods.
 
 Usage:
-    1. <Explain any configuration steps before running, such as editing variables or paths.>
-    2. <Describe how to execute the script — typically via Makefile or Python.>
-        $ make <target>   or   $ python <script_name>.py
-    3. <List what outputs are expected or where results are saved.>
+    1. Import Logger from the repository-root Logger.py module.
+    2. Create an instance with Logger.create(path, clean=True).
+    3. Assign the instance to sys.stdout and sys.stderr.
 
 Outputs:
-    - <Output file or directory 1 — e.g., results.csv>
-    - <Output file or directory 2 — e.g., Feature_Analysis/plots/>
-    - <Output file or directory 3 — e.g., logs/output.txt>
+    - Writes cleaned console output to the configured log file.
+    - Preserves the same output on the original console stream.
 
 TODOs:
-    - <Add a task or improvement — e.g., implement CLI argument parsing.>
-    - <Add another improvement — e.g., extend support to Parquet files.>
-    - <Add optimization — e.g., parallelize evaluation loop.>
-    - <Add robustness — e.g., error handling or data validation.>
+    - None identified.
 
 Dependencies:
-    - Python >= <version>
-    - <Library 1 — e.g., pandas>
-    - <Library 2 — e.g., numpy>
-    - <Library 3 — e.g., scikit-learn>
-    - <Library 4 — e.g., matplotlib, seaborn, tqdm, colorama>
+    - Python standard library.
 
 Assumptions & Notes:
-    - <List any key assumptions — e.g., last column is the target variable.>
-    - <Mention data format — e.g., CSV files only.>
-    - <Mention platform or OS-specific notes — e.g., sound disabled on Windows.>
-    - <Note on output structure or reusability.>
+    - The logger does not close or otherwise manage the original terminal stream.
+    - File writes are serialized with a re-entrant lock for safe callback output.
+================================================================================
 """
 
 import atexit  # For playing a sound when the program finishes
