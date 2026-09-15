@@ -148,3 +148,18 @@ def verify_raw_snapshot(before: Mapping[str, Mapping[str, int]], csv_files: Sequ
             + ", ".join(changed[:20])
         )  # Reject any run that violates the raw read-only integrity guarantee
     print("[RAW-INTEGRITY] Verified: raw CICDDoS2019 CSV sizes/mtimes are unchanged.")  # Report successful post-run source verification
+
+
+def save_base_cache_with_eta(X: np.ndarray, y: np.ndarray, cache_x: Path, cache_y: Path) -> None:
+    """
+    Persist the sampled real-data feature and label caches with progress reporting.
+
+    :param X: Sampled real-data feature matrix.
+    :param y: Sampled integer-label vector.
+    :param cache_x: Destination .npy path for sampled features.
+    :param cache_y: Destination .npy path for sampled labels.
+    :return: None.
+    """
+
+    save_npy_with_eta(X, cache_x, "sampled_X")  # Persist sampled real-data features using incremental .npy writing
+    save_npy_with_eta(y, cache_y, "sampled_y")  # Persist sampled integer labels using incremental .npy writing
