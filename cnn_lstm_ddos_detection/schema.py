@@ -99,3 +99,20 @@ def infer_label_column(columns: Sequence[str]) -> str:
         if candidate in mapping:  # Verify if the current label candidate exists in this CSV
             return mapping[candidate]  # Return the exact header so pandas usecols can match whitespace precisely
     raise ValueError(f"Could not find label column in columns: {list(columns)[:20]}")  # Reject CSV files without a recognizable target column
+
+
+def build_drop_keys(include_identifiers: bool, keep_inbound: bool) -> Set[str]:
+    """
+    Build the normalized feature-key exclusion set for schema inspection.
+
+    :param include_identifiers: Whether Flow ID, IP, and timestamp identifiers should be retained.
+    :param keep_inbound: Whether the Inbound feature should be retained.
+    :return: Normalized feature keys that must be excluded.
+    """
+
+    drop_keys = set(DEFAULT_DROP_KEYS)  # Start from the original default feature exclusions
+    if include_identifiers:  # Verify if identifier-style columns were explicitly requested
+        drop_keys -= {"flowid", "sourceip", "destinationip", "srcip", "dstip", "timestamp"}  # Restore identifier keys to the candidate schema
+    if keep_inbound:  # Verify if the collection-specific Inbound feature was explicitly requested
+        drop_keys.discard("inbound")  # Restore Inbound to the candidate schema
+    return drop_keys  # Return the effective feature exclusion set
