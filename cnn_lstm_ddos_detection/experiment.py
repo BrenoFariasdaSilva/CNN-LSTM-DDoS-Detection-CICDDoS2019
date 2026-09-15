@@ -96,3 +96,15 @@ class ModelArrays:
     y_train_onehot: np.ndarray
     y_val_onehot: np.ndarray
     y_test_onehot: np.ndarray
+
+
+@dataclass
+class TrainingArtifacts:
+    """Store a trained model, training history, TensorFlow datasets, and training duration."""
+
+    model: tf.keras.Model
+    history: tf.keras.callbacks.History
+    train_ds: tf.data.Dataset
+    val_ds: tf.data.Dataset
+    test_ds: tf.data.Dataset
+    training_seconds: float
