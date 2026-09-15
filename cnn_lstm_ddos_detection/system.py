@@ -51,3 +51,13 @@ import pandas as pd
 import psutil
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "1")  # Keep TensorFlow startup output at the original verbosity
+
+try:
+    import tensorflow as tf
+except Exception as exc:
+    raise RuntimeError(
+        "TensorFlow could not be imported. Use Python 3.11/3.12 and install this project's "
+        "platform-aware requirements.txt (tensorflow-metal on Apple Silicon or TensorFlow "
+        "CUDA dependencies on supported Linux NVIDIA hosts). Original error:\n"
+        f"{exc}"
+    ) from exc
