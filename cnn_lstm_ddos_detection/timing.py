@@ -206,3 +206,20 @@ class EpochResourceLogger(tf.keras.callbacks.Callback):
             f"[RESOURCE] epoch={completed} process_RSS={rss_gib:.2f} GiB "
             f"system_used={virtual_memory.percent:.1f}% available={virtual_memory.available / (1024 ** 3):.2f} GiB"
         )  # Emit process and system memory information
+
+
+def create_epoch_resource_logger(total_epochs: int) -> EpochResourceLogger:
+    """
+    Create an initialized Keras callback for epoch resource reporting.
+
+    :param total_epochs: Number of epochs requested for the training run.
+    :return: Initialized EpochResourceLogger callback.
+    """
+
+    callback = EpochResourceLogger()  # Instantiate the callback through the inherited Keras constructor
+    callback.process = psutil.Process(os.getpid())  # Bind resource measurements to the current Python process
+    callback.total_epochs = int(total_epochs)  # Store the requested epoch count for ETA calculation
+    callback.train_start = None  # Initialize the training-start timestamp as unavailable
+    callback.epoch_times = []  # Initialize completed epoch-duration history
+    callback.epoch_start = None  # Initialize the current epoch-start timestamp as unavailable
+    return callback  # Return the fully initialized callback
