@@ -75,3 +75,16 @@ class MetalSafeDenseReLU(tf.keras.layers.Layer):
             trainable=True,
         )  # Create the trainable dense bias with the original initializer
         super().build(input_shape)  # Mark the Keras layer as built through the base implementation
+
+    def call(self: "MetalSafeDenseReLU", inputs: tf.Tensor) -> tf.Tensor:
+        """
+        Apply the Metal-safe dense affine transform followed by ReLU.
+
+        :param self: Current MetalSafeDenseReLU layer instance.
+        :param inputs: Input tensor for the dense transformation.
+        :return: ReLU-activated dense output tensor.
+        """
+
+        transformed = tf.linalg.matmul(inputs, self.kernel)  # Apply the dense matrix multiplication explicitly
+        transformed = tf.add(transformed, self.bias)  # Add bias with AddV2 instead of TensorFlow BiasAdd
+        return tf.nn.relu(transformed)  # Apply the same ReLU activation used by the original custom layer
