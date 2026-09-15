@@ -61,3 +61,8 @@ OMITTED_DEFAULT_CLASSES = {"WebDDoS", "Portmap"}
 OFFICIAL_FIRST_DAY_ATTACKS = (
     "PortMap", "NetBIOS", "LDAP", "MSSQL", "UDP", "UDP-Lag", "SYN"
 )
+
+OFFICIAL_SECOND_DAY_ATTACKS = (
+    "NTP", "DNS", "LDAP", "MSSQL", "NetBIOS", "SNMP", "SSDP", "UDP",
+    "UDP-Lag", "WebDDoS", "SYN", "TFTP"
+)
