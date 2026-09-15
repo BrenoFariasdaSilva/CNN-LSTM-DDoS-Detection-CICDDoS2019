@@ -61,3 +61,17 @@ except Exception as exc:
         "CUDA dependencies on supported Linux NVIDIA hosts). Original error:\n"
         f"{exc}"
     ) from exc
+
+
+def package_version(name: str) -> Optional[str]:
+    """
+    Return an installed package version when package metadata is available.
+
+    :param name: Distribution package name to query.
+    :return: Installed version string or None when the package is not installed.
+    """
+
+    try:  # Query distribution metadata without importing the requested package
+        return importlib.metadata.version(name)  # Return the installed distribution version
+    except importlib.metadata.PackageNotFoundError:  # Handle packages that are not installed in the environment
+        return None  # Preserve the original missing-package representation
