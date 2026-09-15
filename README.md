@@ -326,3 +326,24 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install -r requirements.txt
 python main.py --help
 ```
+
+## Makefile Automation
+
+The former `run-mac.txt` and `run-linux.txt` files have been replaced by one Makefile with explicit operating-system targets:
+
+| Target | Purpose |
+| --- | --- |
+| `make run` | Detect macOS/Linux and dispatch to the corresponding target. |
+| `make run-mac` | Run bounded sampling for Apple-Silicon memory constraints. |
+| `make run-linux` | Run uncapped full-source sampling on a Linux GPU server. |
+| `make tail-log` | Follow `logs/main.log`. |
+| `make run-linux DETACH=1` | Start a detached SSH execution and write `logs/main.pid`. |
+| `make stop` | Stop the process recorded in `logs/main.pid`. |
+| `make show-config` | Print effective paths and tunable Make variables. |
+| `make clean` | Remove `.venv` and Python cache files without deleting results. |
+
+All major controls are overridable inline. For example:
+
+```bash
+make run-linux BATCH_SIZE=512 CHUNKSIZE=100000 RUNS=5
+```
