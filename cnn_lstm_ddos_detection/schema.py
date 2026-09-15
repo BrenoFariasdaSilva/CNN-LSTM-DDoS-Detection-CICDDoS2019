@@ -116,3 +116,29 @@ def build_drop_keys(include_identifiers: bool, keep_inbound: bool) -> Set[str]:
     if keep_inbound:  # Verify if the collection-specific Inbound feature was explicitly requested
         drop_keys.discard("inbound")  # Restore Inbound to the candidate schema
     return drop_keys  # Return the effective feature exclusion set
+
+
+def inspect_single_schema(path: Path, drop_keys: Set[str], display_names: Dict[str, str]) -> Tuple[FileSchema, Set[str]]:
+    """
+    Inspect one CSV header and derive its usable normalized feature keys.
+
+    :param path: CSV file whose header should be inspected.
+    :param drop_keys: Normalized feature keys excluded from model inputs.
+    :param display_names: Mutable mapping that records the first observed display name for each key.
+    :return: File schema and usable normalized feature-key set for the CSV.
+    """
+
+    header = pd.read_csv(path, nrows=0)  # Read only the CSV header to avoid loading source records
+    columns = [str(column) for column in header.columns]  # Preserve exact CSV header spellings
+    label = infer_label_column(columns)  # Identify the exact target-column header
+    columns_by_key: Dict[str, str] = {}  # Prepare normalized-to-exact column mapping
+    for column in columns:  # Process headers in their original CSV order
+        key = norm_column_key(column)  # Normalize the current column for cross-file comparison
+        if not key or key.startswith("unnamed"):  # Verify if the normalized column is empty or an unnamed index artifact
+            continue  # Exclude unusable unnamed/index columns
+        columns_by_key.setdefault(key, column)  # Preserve the first exact header for each normalized key
+        display_names.setdefault(key, column.strip())  # Preserve the first clean display name across files
+    label_key = norm_column_key(label)  # Normalize the label key so it can be excluded from features
+    candidate_keys = set(columns_by_key) - {label_key} - drop_keys  # Compute usable features for this individual CSV
+    schema = FileSchema(path=path, label_column=label, columns_by_key=columns_by_key)  # Capture exact per-file schema information
+    return schema, candidate_keys  # Return schema metadata and this CSV's candidate feature set
