@@ -108,3 +108,13 @@ class TrainingArtifacts:
     val_ds: tf.data.Dataset
     test_ds: tf.data.Dataset
     training_seconds: float
+
+
+@dataclass
+class EvaluationArtifacts:
+    """Store held-out evaluation outputs needed for metrics and persisted predictions."""
+
+    test_loss: float
+    keras_accuracy: float
+    probabilities: np.ndarray
+    predictions: np.ndarray
