@@ -170,3 +170,70 @@ def split_run_labels(y: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, 
         f"test={len(y_test):,} (15%) | completed in {format_duration(time.time()-split_started)}"
     )  # Report split sizes and duration using the original format
     return train_idx, val_idx, test_idx, y_train, y_val, y_test  # Return indices and aligned integer labels
+
+
+def prepare_run_data(X: np.ndarray, y: np.ndarray, cfg: Config, seed: int, feature_names: Sequence[str], generated_dir: Path) -> PreparedRunData:
+    """
+    Split, preprocess, SMOTE-balance, optionally persist, and package one run's data.
+
+    :param X: Complete sampled real-data feature matrix.
+    :param y: Complete sampled integer-label vector.
+    :param cfg: Validated experiment configuration.
+    :param seed: Current experiment run seed.
+    :param feature_names: Ordered readable feature names.
+    :param generated_dir: Destination for optionally persisted transformed dataset copies.
+    :return: PreparedRunData containing transformed arrays and preprocessing state.
+    """
+
+    train_idx, val_idx, test_idx, y_train, y_val, y_test = split_run_labels(y, seed)  # Create this run's real-data partitions
+    X_train, X_val, X_test, imputer, scaler, preprocessing_timings = preprocess_arrays(X, train_idx, val_idx, test_idx)  # Fit train-only imputation/scaling and transform all partitions
+    print(
+        f"[MEMORY] standardized arrays: train={X_train.nbytes / 2**30:.2f} GiB "
+        f"val={X_val.nbytes / 2**30:.2f} GiB test={X_test.nbytes / 2**30:.2f} GiB"
+    )  # Report standardized partition memory use
+    X_train_smote, y_train_smote, smote_report = apply_smote(
+        X_train=X_train,
+        y_train=y_train,
+        k_neighbors=cfg.smote_k_neighbors,
+        seed=seed + 17_003,
+        generation_chunk=cfg.smote_generation_chunk,
+        neighbor_query_chunk=cfg.smote_neighbor_query_chunk,
+    )  # Apply the original seed-derived SMOTE procedure to training data only
+    print(
+        f"[MEMORY] SMOTE train={X_train_smote.nbytes / 2**30:.2f} GiB "
+        f"({len(y_train_smote):,} rows)"
+    )  # Report post-SMOTE training memory use and row count
+    preprocessing_manifest = build_preprocessing_manifest(feature_names, X_train.shape[1], preprocessing_timings, smote_report)  # Build auditable preprocessing metadata before releasing the pre-SMOTE training array
+    if cfg.save_derived_data:  # Verify if transformed dataset persistence is enabled for this run
+        persist_generated_dataset(
+            generated_dir=generated_dir,
+            X_train_smote=X_train_smote,
+            y_train_smote=y_train_smote,
+            X_val=X_val,
+            y_val=y_val,
+            X_test=X_test,
+            y_test=y_test,
+            train_idx=train_idx,
+            val_idx=val_idx,
+            test_idx=test_idx,
+            manifest=preprocessing_manifest,
+        )  # Persist the same transformed data copies and split indices as the original script
+    if X_train_smote is not X_train:  # Verify if SMOTE created a new training feature matrix
+        del X_train  # Release the pre-SMOTE standardized training matrix while preserving the resampled matrix
+    gc.collect()  # Encourage prompt memory release before one-hot/model preparation
+    return PreparedRunData(
+        X_train_smote=X_train_smote,
+        y_train_smote=y_train_smote,
+        X_val=X_val,
+        y_val=y_val,
+        X_test=X_test,
+        y_test=y_test,
+        y_train_before_smote=y_train,
+        train_idx=train_idx,
+        val_idx=val_idx,
+        test_idx=test_idx,
+        imputer=imputer,
+        scaler=scaler,
+        smote_report=smote_report,
+        preprocessing_manifest=preprocessing_manifest,
+    )  # Return transformed data and fitted preprocessing state for model execution
