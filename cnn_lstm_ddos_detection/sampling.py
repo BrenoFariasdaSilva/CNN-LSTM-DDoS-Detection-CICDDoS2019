@@ -167,3 +167,20 @@ def update_class_reservoirs(features: np.ndarray, labels: np.ndarray, reservoirs
         )  # Merge candidates into the bounded class reservoir
         reservoirs_x[class_name] = retained_features  # Store the updated feature reservoir
         reservoirs_p[class_name] = retained_priorities  # Store the updated priority reservoir
+
+
+def collect_unlimited_class_pieces(features: np.ndarray, labels: np.ndarray, class_pieces: Dict[str, List[np.ndarray]]) -> None:
+    """
+    Append every target row from one streamed chunk to per-class retain-all pieces.
+
+    :param features: Numeric feature matrix for target rows in the current chunk.
+    :param labels: Canonical target labels aligned with the feature matrix.
+    :param class_pieces: Mutable per-class lists collecting uncapped feature chunks.
+    :return: None.
+    """
+
+    for class_name in PAPER_12_CLASSES:  # Process classes in the fixed target-class order
+        class_indices = np.flatnonzero(labels == class_name)  # Locate all current-chunk rows for this class
+        if class_indices.size == 0:  # Verify if the class is absent from the current chunk
+            continue  # Skip empty class pieces without allocating an array
+        class_pieces[class_name].append(features[class_indices])  # Retain every target row for this class without sampling
