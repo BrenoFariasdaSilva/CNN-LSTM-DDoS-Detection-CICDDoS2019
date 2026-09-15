@@ -97,3 +97,30 @@ class ByteProgress:
     last_print: float
     min_interval: float
 
+    def report(self: "ByteProgress", done_bytes: int, detail: str = "", force: bool = False) -> None:
+        """
+        Report byte-scan progress when the minimum reporting interval has elapsed.
+
+        :param self: Current ByteProgress reporter instance.
+        :param done_bytes: Number of source bytes consumed so far.
+        :param detail: Optional stage detail appended to the progress line.
+        :param force: Whether to report even when the minimum interval has not elapsed.
+        :return: None.
+        """
+
+        now = time.time()  # Capture one timestamp for all calculations in this report
+        if not force and now - self.last_print < self.min_interval:  # Verify if a non-forced report is being requested too soon
+            return  # Skip frequent progress output to preserve the original reporting cadence
+        done = min(max(int(done_bytes), 0), self.total_bytes)  # Clamp consumed bytes to the valid scan range
+        elapsed = now - self.start  # Calculate elapsed scan time
+        eta = eta_from_progress(done, self.total_bytes, elapsed)  # Estimate remaining scan time
+        pct = 100.0 * done / self.total_bytes  # Calculate completion percentage
+        rate_mib = done / max(elapsed, 1e-9) / (1024 ** 2)  # Calculate the observed scan throughput in MiB/s
+        suffix = f" | {detail}" if detail else ""  # Preserve the optional detail suffix format
+        print(
+            f"[ETA][{self.label}] {pct:6.2f}% | "
+            f"{done / 2**30:.2f}/{self.total_bytes / 2**30:.2f} GiB | "
+            f"{rate_mib:.1f} MiB/s | elapsed={format_duration(elapsed)} | "
+            f"ETA={format_duration(eta)}{suffix}"
+        )  # Emit the original byte-progress fields
+        self.last_print = now  # Record the report timestamp for interval throttling
