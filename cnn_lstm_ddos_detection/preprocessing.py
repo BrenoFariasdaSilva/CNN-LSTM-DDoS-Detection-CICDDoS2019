@@ -290,3 +290,44 @@ def build_smote_report(counts_before: Counter, counts_after: Counter, k_neighbor
         "seconds": float(time.time() - smote_start),
         "per_class": per_class_report,
     }  # Preserve the original SMOTE report structure and field meanings
+
+
+def apply_smote(X_train: np.ndarray, y_train: np.ndarray, k_neighbors: int, seed: int, generation_chunk: int, neighbor_query_chunk: int) -> Tuple[np.ndarray, np.ndarray, Dict[str, object]]:
+    """
+    Apply classic multiclass SMOTE exclusively to the standardized training partition.
+
+    :param X_train: Standardized training feature matrix.
+    :param y_train: Integer training labels aligned with X_train.
+    :param k_neighbors: Requested number of same-class nearest neighbors.
+    :param seed: Random seed dedicated to training-only SMOTE.
+    :param generation_chunk: Maximum synthetic rows generated per allocation batch.
+    :param neighbor_query_chunk: Maximum rows queried per nearest-neighbor batch.
+    :return: Resampled training features, resampled labels, and SMOTE audit report.
+    """
+
+    rng = np.random.default_rng(seed)  # Create the original independent SMOTE random generator
+    counts_before = Counter(int(value) for value in y_train.tolist())  # Count integer training labels before augmentation
+    target_n = max(counts_before.values())  # Set every minority class target to the largest training class count
+    total_to_generate = sum(target_n - counts_before[class_id] for class_id in range(len(PAPER_12_CLASSES)))  # Calculate total required synthetic rows
+    print(
+        f"[SMOTE] training-only oversampling | target={target_n:,}/class | "
+        f"synthetic rows to generate={total_to_generate:,} | k={k_neighbors}"
+    )  # Report the original training-only SMOTE target information
+    synthetic_x_parts: List[np.ndarray] = []  # Collect complete synthetic feature arrays by class
+    synthetic_y_parts: List[np.ndarray] = []  # Collect aligned synthetic integer-label arrays by class
+    generated_total = 0  # Track global synthetic-row progress
+    smote_start = time.time()  # Start total SMOTE duration measurement
+    per_class_report: Dict[str, object] = {}  # Collect per-class augmentation metadata
+    for class_id, class_name in enumerate(PAPER_12_CLASSES):  # Process classes in the fixed original class order
+        class_x, class_y, class_report, generated_total = oversample_smote_class(
+            X_train, y_train, class_id, class_name, target_n, k_neighbors, generation_chunk,
+            neighbor_query_chunk, rng, generated_total, total_to_generate, smote_start,
+        )  # Process one class without changing random-number consumption order
+        per_class_report[class_name] = class_report  # Preserve per-class report insertion order
+        if class_x is not None and class_y is not None:  # Verify if this class produced synthetic rows
+            synthetic_x_parts.append(class_x)  # Preserve this class's synthetic features for final concatenation
+            synthetic_y_parts.append(class_y)  # Preserve aligned synthetic labels for final concatenation
+    X_resampled, y_resampled, counts_after = combine_smote_training(X_train, y_train, synthetic_x_parts, synthetic_y_parts, rng)  # Combine and shuffle original/synthetic training data
+    report = build_smote_report(counts_before, counts_after, k_neighbors, neighbor_query_chunk, target_n, total_to_generate, smote_start, per_class_report)  # Build the original audit-report schema
+    print(f"[SMOTE] complete in {format_duration(report['seconds'])}; rows={len(y_resampled):,}")  # Report final training-only SMOTE duration and row count
+    return X_resampled, y_resampled, report  # Return balanced training data and its audit report
