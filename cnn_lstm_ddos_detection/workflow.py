@@ -133,3 +133,20 @@ def persist_source_inventory(csv_files: Sequence[Path], data_dir: Path, output_d
         "\n".join(str(path.relative_to(data_dir)) for path in csv_files), encoding="utf-8"
     )  # Persist the original recursive source-file inventory format
     return raw_snapshot  # Return the snapshot for post-run integrity comparison
+
+
+def load_cached_sample(cache_x: Path, cache_y: Path, cache_features: Path) -> Tuple[np.ndarray, np.ndarray, List[str]]:
+    """
+    Load the reusable sampled real-data arrays and feature names from project output.
+
+    :param cache_x: Existing sampled feature-array .npy path.
+    :param cache_y: Existing sampled integer-label .npy path.
+    :param cache_features: Existing feature-name JSON path.
+    :return: Sampled feature matrix, label vector, and ordered readable feature names.
+    """
+
+    print("[DATA] Reusing cached sampled dataset from project output directory.")  # Report explicit reuse of the existing sampled dataset cache
+    features = np.load(cache_x, mmap_mode=None).astype(np.float32, copy=False)  # Load sampled features exactly as the original cache path does
+    labels = np.load(cache_y, mmap_mode=None).astype(np.int16, copy=False)  # Load sampled integer labels exactly as the original cache path does
+    feature_names = json.loads(cache_features.read_text(encoding="utf-8"))  # Load ordered readable feature names from JSON
+    return features, labels, feature_names  # Return the complete reusable sample cache
