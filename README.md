@@ -1,6 +1,6 @@
 <div align="center">
   
-# [Template-Project.](https://github.com/BrenoFariasdaSilva/Template-Project) <img src="https://github.com/BrenoFariasdaSilva/Template-Project/blob/d4173c3b2249a77b6b1a223b86e801ea2042eddc/.assets/Icons/GitHub%20Colored%20Icon.svg"  width="3%" height="3%">
+# [CNN-LSTM-DDoS-Detection-CICDDoS2019.](https://github.com/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019) <img src="https://github.com/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019/blob/d4173c3b2249a77b6b1a223b86e801ea2042eddc/.assets/Icons/GitHub%20Colored%20Icon.svg"  width="3%" height="3%">
 
 </div>
 
@@ -16,27 +16,27 @@ Project-Description.
 
 <div align="center">
 
-![GitHub Code Size in Bytes](https://img.shields.io/github/languages/code-size/BrenoFariasdaSilva/Template-Project)
-![GitHub Commits](https://img.shields.io/github/commit-activity/t/BrenoFariasdaSilva/Template-Project/main)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/BrenoFariasdaSilva/Template-Project)
-![GitHub Forks](https://img.shields.io/github/forks/BrenoFariasdaSilva/Template-Project)
-![GitHub Language Count](https://img.shields.io/github/languages/count/BrenoFariasdaSilva/Template-Project)
-![GitHub License](https://img.shields.io/github/license/BrenoFariasdaSilva/Template-Project)
-![GitHub Stars](https://img.shields.io/github/stars/BrenoFariasdaSilva/Template-Project)
-![GitHub Contributors](https://img.shields.io/github/contributors/BrenoFariasdaSilva/Template-Project)
-![GitHub Created At](https://img.shields.io/github/created-at/BrenoFariasdaSilva/Template-Project)
-![wakatime](https://wakatime.com/badge/github/BrenoFariasdaSilva/Template-Project.svg)
+![GitHub Code Size in Bytes](https://img.shields.io/github/languages/code-size/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Commits](https://img.shields.io/github/commit-activity/t/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019/main)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Forks](https://img.shields.io/github/forks/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Language Count](https://img.shields.io/github/languages/count/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub License](https://img.shields.io/github/license/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Stars](https://img.shields.io/github/stars/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Contributors](https://img.shields.io/github/contributors/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![GitHub Created At](https://img.shields.io/github/created-at/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019)
+![wakatime](https://wakatime.com/badge/github/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019.svg)
 
 </div>
 
 <div align="center">
   
-![RepoBeats Statistics](https://repobeats.axiom.co/api/embed/c36c20e25527ac26cdc37e52e5e2335a58f758c8.svg "Repobeats analytics image")
+![RepoBeats Statistics](https://repobeats.axiom.co/api/embed/c2839086290a2fe2e4276baf5c525323c1fe7b8f.svg "Repobeats analytics image")
 
 </div>
 
 ## Table of Contents
-- [Template-Project. ](#template-project-)
+- [CNN-LSTM-DDoS-Detection-CICDDoS2019. ](#cnn-lstm-ddos-detection-cicddos2019-)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Requirements](#requirements)
@@ -71,8 +71,8 @@ Bullet points of the requirements.
 1. Clone the repository with the following command:
 
    ```bash
-   git clone https://github.com/BrenoFariasdaSilva/Template-Project.git
-   cd Template-Project
+   git clone https://github.com/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019.git
+   cd CNN-LSTM-DDoS-Detection-CICDDoS2019
    ```
 
 ## Installation:
@@ -112,7 +112,7 @@ Bullet points of the requirements.
 
 ### Dataset - Optional
 
-1. Download the dataset from [WEBSITE-HERE]() and place it in this project directory `(/Template-Project)` and run the following command:
+1. Download the dataset from [WEBSITE-HERE]() and place it in this project directory `(/CNN-LSTM-DDoS-Detection-CICDDoS2019)` and run the following command:
 
    ```bash
    make dataset
