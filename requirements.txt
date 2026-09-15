@@ -1,0 +1,13 @@
+# Cross-platform environment for Python 3.11/3.12.
+# macOS Apple Silicon uses tensorflow-metal.
+# Linux x86_64 installs TensorFlow's CUDA user-space dependencies; an NVIDIA driver must already be available on the host.
+tensorflow==2.18.1; platform_system == "Darwin"
+tensorflow-metal==1.2.0; platform_system == "Darwin" and platform_machine == "arm64"
+tensorflow[and-cuda]==2.18.1; platform_system == "Linux" and platform_machine == "x86_64"
+tensorflow==2.18.1; platform_system == "Linux" and platform_machine != "x86_64"
+numpy>=1.26,<2.1
+pandas>=2.2,<3.0
+scikit-learn>=1.5,<2.0
+matplotlib>=3.8,<4.0
+joblib>=1.4,<2.0
+psutil>=6.0,<8.0
