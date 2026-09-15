@@ -88,3 +88,15 @@ class MetalSafeDenseReLU(tf.keras.layers.Layer):
         transformed = tf.linalg.matmul(inputs, self.kernel)  # Apply the dense matrix multiplication explicitly
         transformed = tf.add(transformed, self.bias)  # Add bias with AddV2 instead of TensorFlow BiasAdd
         return tf.nn.relu(transformed)  # Apply the same ReLU activation used by the original custom layer
+
+    def get_config(self: "MetalSafeDenseReLU") -> Dict[str, Any]:
+        """
+        Return serializable Keras configuration for this custom layer.
+
+        :param self: Current MetalSafeDenseReLU layer instance.
+        :return: Base Keras layer configuration extended with the dense unit count.
+        """
+
+        config = super().get_config()  # Retrieve standard Keras layer serialization fields
+        config.update({"units": self.units})  # Persist the custom dense width required for deserialization
+        return config  # Return the complete serializable layer configuration
