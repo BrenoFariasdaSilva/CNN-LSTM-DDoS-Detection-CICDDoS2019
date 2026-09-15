@@ -398,3 +398,44 @@ def build_metrics(data: PreparedRunData, evaluation: EvaluationArtifacts, traini
         }
     )  # Preserve the original run-metric fields and timing point
     return metrics  # Return the complete scalar metrics mapping
+
+
+def persist_evaluation_outputs(run_dir: Path, feature_names: Sequence[str], data: PreparedRunData, evaluation: EvaluationArtifacts, metrics: Mapping[str, object]) -> None:
+    """
+    Persist confusion, reports, predictions, metrics, transformers, and feature metadata.
+
+    :param run_dir: Current run output directory.
+    :param feature_names: Ordered readable feature names used by the model.
+    :param data: Prepared run data and fitted preprocessing objects.
+    :param evaluation: Held-out probabilities and integer predictions.
+    :param metrics: Complete scalar run metrics.
+    :return: None.
+    """
+
+    class_count = len(PAPER_12_CLASSES)  # Use the fixed class count for confusion/report ordering
+    confusion = confusion_matrix(data.y_test, evaluation.predictions, labels=np.arange(class_count))  # Compute held-out confusion counts in fixed class order
+    pd.DataFrame(confusion, index=PAPER_12_CLASSES, columns=PAPER_12_CLASSES).to_csv(run_dir / "confusion_matrix.csv")  # Persist raw confusion counts as CSV
+    save_confusion(confusion, run_dir / "confusion_matrix.png")  # Persist the labeled confusion-matrix image
+    report = classification_report(
+        data.y_test,
+        evaluation.predictions,
+        labels=np.arange(class_count),
+        target_names=PAPER_12_CLASSES,
+        output_dict=True,
+        zero_division=0,
+    )  # Compute the complete held-out classification report using fixed class ordering
+    (run_dir / "classification_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")  # Persist classification report JSON
+    (run_dir / "metrics.json").write_text(json.dumps(dict(metrics), indent=2), encoding="utf-8")  # Persist scalar run metrics JSON
+    (run_dir / "preprocessing_manifest.json").write_text(json.dumps(data.preprocessing_manifest, indent=2), encoding="utf-8")  # Persist preprocessing manifest at the run root
+    pd.DataFrame(
+        {
+            "y_true": data.y_test,
+            "y_pred": evaluation.predictions,
+            "true_label": [PAPER_12_CLASSES[index] for index in data.y_test],
+            "predicted_label": [PAPER_12_CLASSES[index] for index in evaluation.predictions],
+            "predicted_probability": evaluation.probabilities.max(axis=1),
+        }
+    ).to_csv(run_dir / "test_predictions.csv", index=False)  # Persist held-out predictions and maximum predicted probabilities
+    joblib.dump(data.imputer, run_dir / "imputer.joblib")  # Persist the train-fitted median imputer
+    joblib.dump(data.scaler, run_dir / "scaler.joblib")  # Persist the train-fitted z-score standardizer
+    (run_dir / "feature_names.json").write_text(json.dumps(list(feature_names), indent=2), encoding="utf-8")  # Persist ordered readable feature names
