@@ -517,3 +517,17 @@ If you use this repository, cite both the reproduction software and the original
 ```
 
 If you find the repository useful, consider starring it and opening issues or pull requests for reproducibility improvements.
+
+## Contributing
+
+Contributions are welcome, particularly when they improve reproducibility without silently changing the target experiment.
+
+1. Fork the repository and create a focused branch.
+2. Preserve the existing source-structure rules and document any behavior change explicitly.
+3. Validate changes against both bounded and full-source modes where practical.
+4. Use clear commit messages, for example:
+   - `FEAT: Add ...`
+   - `FIX: Resolve ...`
+   - `DOCS: Update ...`
+   - `REFACTOR: Improve ...`
+5. Open a pull request describing the scientific/reproducibility impact of the change.
