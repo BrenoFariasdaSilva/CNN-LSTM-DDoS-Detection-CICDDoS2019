@@ -103,3 +103,33 @@ def update_observed_counts(labels: pd.Series, observed: Counter, omitted: Counte
             observed[canonical] += int(count)  # Accumulate target-class observations
         else:  # Handle recognized dataset classes intentionally omitted from the reconstruction
             omitted[canonical] += int(count)  # Accumulate omitted-class observations
+
+
+def build_numeric_chunk(chunk: pd.DataFrame, schema: FileSchema, feature_keys: Sequence[str], labels: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Convert target rows from one CSV chunk into numeric feature and label arrays.
+
+    :param chunk: Raw pandas chunk read from one source CSV.
+    :param schema: Exact schema metadata for the source CSV.
+    :param feature_keys: Ordered normalized feature keys shared by all CSV files.
+    :param labels: Canonicalized labels aligned with the raw chunk.
+    :return: Float32 feature matrix and canonical object-label vector for target rows.
+    """
+
+    mask = labels.isin(PAPER_12_CLASSES)  # Identify rows belonging to the target 12 classes
+    if not mask.any():  # Verify if the current chunk contains no target rows
+        return np.empty((0, len(feature_keys)), dtype=np.float32), np.empty((0,), dtype=object)  # Return empty aligned arrays without changing RNG state
+    actual_feature_columns = [schema.columns_by_key[key] for key in feature_keys]  # Resolve normalized keys to exact source CSV headers
+    part = chunk.loc[mask, actual_feature_columns]  # Select only target rows and ordered feature columns
+    rename_to_key = {schema.columns_by_key[key]: key for key in feature_keys}  # Build exact-header to normalized-key mapping
+    part = part.rename(columns=rename_to_key)  # Normalize DataFrame column labels across source files
+    part = part.loc[:, list(feature_keys)]  # Reassert the common feature order explicitly
+    numeric_columns: List[np.ndarray] = []  # Collect converted feature columns before column stacking
+    for key in feature_keys:  # Convert every common feature independently to preserve original coercion behavior
+        series = pd.to_numeric(part[key], errors="coerce")  # Coerce malformed feature values to missing values
+        values = series.to_numpy(dtype=np.float32, copy=False)  # Materialize the feature as float32
+        values[~np.isfinite(values)] = np.nan  # Convert positive and negative infinity to missing values
+        numeric_columns.append(values)  # Preserve feature-column order for stacking
+    features = np.column_stack(numeric_columns).astype(np.float32, copy=False)  # Build the chunk feature matrix
+    target_labels = labels.loc[mask].to_numpy(dtype=object)  # Materialize canonical target labels aligned with features
+    return features, target_labels  # Return numeric target rows for reservoir sampling
