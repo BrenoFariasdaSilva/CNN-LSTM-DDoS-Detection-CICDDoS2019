@@ -355,3 +355,26 @@ def build_capped_class_arrays(per_class_pieces: Dict[str, List[np.ndarray]], glo
                 indices = rng.choice(len(array), size=prebalance_count, replace=False)  # Downsample uniformly without replacement
                 class_arrays[class_name] = array[indices]  # Store the diagnostically balanced class array
     return class_arrays, counts_before_global_cap, prebalance_count  # Return final class arrays and capping metadata
+
+
+def combine_class_arrays(class_arrays: Dict[str, np.ndarray], rng: np.random.Generator) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
+    """
+    Combine per-class feature arrays into one shuffled sampled dataset.
+
+    :param class_arrays: Final feature arrays grouped by canonical class.
+    :param rng: Dataset-level random generator used for the final row permutation.
+    :return: Shuffled feature matrix, integer-label vector, and final class counts.
+    """
+
+    feature_parts: List[np.ndarray] = []  # Collect class feature arrays in fixed class order
+    label_parts: List[np.ndarray] = []  # Collect aligned integer-label arrays
+    final_counts: Dict[str, int] = {}  # Record final sampled real-row counts by class
+    for class_id, class_name in enumerate(PAPER_12_CLASSES):  # Assign integer class IDs using the fixed class ordering
+        array = class_arrays[class_name]  # Retrieve final sampled rows for this class
+        feature_parts.append(array)  # Append class features to the global sampled dataset
+        label_parts.append(np.full(len(array), class_id, dtype=np.int16))  # Create aligned integer labels for the class
+        final_counts[class_name] = int(len(array))  # Record this class's final real-row count
+    features = np.concatenate(feature_parts, axis=0).astype(np.float32, copy=False)  # Concatenate all sampled feature rows
+    labels = np.concatenate(label_parts, axis=0)  # Concatenate aligned integer labels
+    order = rng.permutation(len(labels))  # Draw the final dataset permutation with the existing dataset RNG state
+    return features[order], labels[order], final_counts  # Return the same randomized row order used by the original implementation
