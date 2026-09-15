@@ -1,49 +1,44 @@
 """
 ================================================================================
-<PROJECT OR SCRIPT TITLE>
+CNN-LSTM DDOS DETECTION CICDDOS2019 MEMORY-SAFE CICDDOS2019 SAMPLING
 ================================================================================
 Author      : Breno Farias da Silva
-Created     : <YYYY-MM-DD>
+Created     : 2026-09-14
 Description :
-    <Provide a concise and complete overview of what this script does.>
-    <Mention its purpose, scope, and relevance to the larger project.>
+    Streams every discovered CICDDoS2019 CSV in bounded pandas chunks and supports
+    bounded per-file/per-class sampling or an explicit retain-all mode before global capping.
 
     Key features include:
-        - <Feature 1 — e.g., automatic data loading and preprocessing>
-        - <Feature 2 — e.g., model training and evaluation>
-        - <Feature 3 — e.g., visualization or report generation>
-        - <Feature 4 — e.g., logging or notification system>
-        - <Feature 5 — e.g., integration with other modules or datasets>
+        - Reads raw CSV files without loading the complete corpus into memory.
+        - Preserves uniform bounded per-file/per-class priority sampling behavior.
+        - Supports zero as an explicit no-cap mode that retains every target row.
+        - Builds the sampled in-memory dataset and sampling audit report.
 
 Usage:
-    1. <Explain any configuration steps before running, such as editing variables or paths.>
-    2. <Describe how to execute the script — typically via Makefile or Python.>
-        $ make <target>   or   $ python <script_name>.py
-    3. <List what outputs are expected or where results are saved.>
+    1. Inspect source schemas before calling build_memory_safe_sample().
+    2. Supply the configured chunk size and sampling caps.
+    3. Use the returned arrays as the immutable real-data basis for repeated runs.
 
 Outputs:
-    - <Output file or directory 1 — e.g., results.csv>
-    - <Output file or directory 2 — e.g., Feature_Analysis/plots/>
-    - <Output file or directory 3 — e.g., logs/output.txt>
+    - Sampled feature and integer-label NumPy arrays in memory.
+    - Sampling audit report returned to the caller.
 
 TODOs:
-    - <Add a task or improvement — e.g., implement CLI argument parsing.>
-    - <Add another improvement — e.g., extend support to Parquet files.>
-    - <Add optimization — e.g., parallelize evaluation loop.>
-    - <Add robustness — e.g., error handling or data validation.>
+    - None identified.
 
 Dependencies:
-    - Python >= <version>
-    - <Library 1 — e.g., pandas>
-    - <Library 2 — e.g., numpy>
-    - <Library 3 — e.g., scikit-learn>
-    - <Library 4 — e.g., matplotlib, seaborn, tqdm, colorama>
+    - numpy.
+    - pandas.
+    - cnn_lstm_ddos_detection.config.
+    - cnn_lstm_ddos_detection.constants.
+    - cnn_lstm_ddos_detection.schema.
+    - cnn_lstm_ddos_detection.timing.
 
 Assumptions & Notes:
-    - <List any key assumptions — e.g., last column is the target variable.>
-    - <Mention data format — e.g., CSV files only.>
-    - <Mention platform or OS-specific notes — e.g., sound disabled on Windows.>
-    - <Note on output structure or reusability.>
+    - Raw CSV files are opened for reading only and are never modified by this module.
+    - Random-number generator call ordering preserves the original bounded-sampling implementation.
+    - Retain-all mode avoids unnecessary random priorities and concatenates each class once per source file.
+================================================================================
 """
 
 import atexit  # For playing a sound when the program finishes
