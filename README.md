@@ -531,3 +531,16 @@ Contributions are welcome, particularly when they improve reproducibility withou
    - `DOCS: Update ...`
    - `REFACTOR: Improve ...`
 5. Open a pull request describing the scientific/reproducibility impact of the change.
+
+## Author
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/BrenoFariasdaSilva" title="Breno Farias da Silva on GitHub">
+        <img src="https://github.com/BrenoFariasdaSilva.png" width="100px;" alt="Breno Farias da Silva"/><br>
+        <sub><b>Breno Farias da Silva</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
