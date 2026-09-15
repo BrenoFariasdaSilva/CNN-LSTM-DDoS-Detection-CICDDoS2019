@@ -236,3 +236,22 @@ Positive sample caps use the existing seeded priority-reservoir logic. These val
 ```bash
 make run-mac MAC_ROWS_PER_FILE_PER_CLASS=50000 MAC_GLOBAL_CLASS_CAP=50000 BATCH_SIZE=128
 ```
+
+### Full Linux mode
+
+The `make run-linux` target is configured for a high-memory Linux GPU server:
+
+```text
+LINUX_ROWS_PER_FILE_PER_CLASS=0
+LINUX_GLOBAL_CLASS_CAP=0
+BATCH_SIZE=256
+```
+
+For this project, `0` has explicit retain-all/no-cap semantics:
+
+```text
+--rows-per-file-per-class 0  = retain every target row from every discovered CSV
+--global-class-cap 0         = do not globally cap any target class
+```
+
+`--batch-size` affects TensorFlow training batches only; it does not limit dataset sampling. The Linux data and output defaults remain inside the expected server layout and repository directory, respectively.
