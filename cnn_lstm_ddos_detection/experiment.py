@@ -359,3 +359,42 @@ def evaluate_model(model: tf.keras.Model, test_ds: tf.data.Dataset, device: str)
     print(f"[EVAL] held-out test evaluation completed in {format_duration(time.time()-evaluation_started)}")  # Report held-out evaluation duration
     predictions = probabilities.argmax(axis=1).astype(np.int32)  # Convert softmax probabilities to integer class predictions
     return EvaluationArtifacts(float(test_loss), float(keras_accuracy), probabilities, predictions)  # Return all held-out evaluation outputs
+
+
+def build_metrics(data: PreparedRunData, evaluation: EvaluationArtifacts, training: TrainingArtifacts, cfg: Config, run_index: int, seed: int, device: str, run_started: float) -> Dict[str, object]:
+    """
+    Build the complete scalar metrics dictionary for one experiment run.
+
+    :param data: Prepared run data and SMOTE metadata.
+    :param evaluation: Held-out model evaluation outputs.
+    :param training: Training history and measured duration.
+    :param cfg: Validated experiment configuration.
+    :param run_index: One-based experiment run number.
+    :param seed: Current run random seed.
+    :param device: TensorFlow device used for the run.
+    :param run_started: Run start timestamp used for total-duration measurement.
+    :return: Complete metrics dictionary persisted and returned by the run.
+    """
+
+    metrics = metrics_from_predictions(data.y_test, evaluation.predictions)  # Compute held-out accuracy and macro/weighted metrics
+    metrics.update(
+        {
+            "run": run_index,
+            "seed": seed,
+            "device": device,
+            "test_loss": evaluation.test_loss,
+            "keras_test_accuracy": evaluation.keras_accuracy,
+            "paper_target_accuracy": cfg.target_accuracy,
+            "distance_to_paper_target": abs(float(metrics["accuracy"]) - cfg.target_accuracy),
+            "training_seconds": float(training.training_seconds),
+            "run_total_seconds": float(time.time() - run_started),
+            "epochs_requested": cfg.epochs,
+            "epochs_completed": len(training.history.history.get("loss", [])),
+            "train_size_before_smote": int(len(data.y_train_before_smote)),
+            "train_size_after_smote": int(len(data.y_train_smote)),
+            "validation_size": int(len(data.y_val)),
+            "test_size": int(len(data.y_test)),
+            "smote_synthetic_rows": int(data.smote_report["synthetic_rows"]),
+        }
+    )  # Preserve the original run-metric fields and timing point
+    return metrics  # Return the complete scalar metrics mapping
