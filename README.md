@@ -85,3 +85,12 @@ The goal is **reproduction, not retrospective redesign**. Settings explicitly re
 > D. S. Rajput and A. K. Upadhyay, “Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection,” *International Journal of Experimental Research and Review*, vol. 46, pp. 253–272, 2024. DOI: [10.52756/ijerr.2024.v46.020](https://doi.org/10.52756/ijerr.2024.v46.020).
 
 The paper uses CICDDoS2019 and proposes a CNN-LSTM model in which convolutional layers perform spatial/feature extraction and LSTM layers model sequential dependencies. The publication reports the CNN-LSTM as the strongest deep-learning approach, with the multiclass experiment reaching **99.76% accuracy**.
+
+## Reproduction Objective
+
+The repository reproduces the paper's best **12-class multiclass CNN-LSTM** path as closely as the publication permits. It is designed to answer four practical questions:
+
+1. Can the reported preprocessing and CNN-LSTM methodology be implemented end-to-end on CICDDoS2019?
+2. How close can an independent execution get to the paper's 99.76% multiclass accuracy?
+3. Which experiment details are directly supported by the publication, and which have to be reconstructed?
+4. Can the same code run in constrained Apple-Silicon memory and in a high-memory Linux GPU server without changing the experiment logic?
