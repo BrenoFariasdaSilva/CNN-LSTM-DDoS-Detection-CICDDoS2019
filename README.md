@@ -489,3 +489,31 @@ Actual results depend on the reconstructed settings, source files, software/hard
 
 1. D. S. Rajput and A. K. Upadhyay, “Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection,” *International Journal of Experimental Research and Review*, vol. 46, pp. 253–272, 2024. [https://doi.org/10.52756/ijerr.2024.v46.020](https://doi.org/10.52756/ijerr.2024.v46.020)
 2. Canadian Institute for Cybersecurity, University of New Brunswick, “DDoS 2019 (CICDDoS2019).” [https://www.unb.ca/cic/datasets/ddos-2019.html](https://www.unb.ca/cic/datasets/ddos-2019.html)
+
+## How to Cite
+
+If you use this repository, cite both the reproduction software and the original paper. The repository root includes [`main.bib`](main.bib) with both entries.
+
+```bibtex
+@misc{farias2026cnnlstmddosdetection,
+  author       = {Breno Farias da Silva},
+  title        = {CNN-LSTM DDoS Detection on CICDDoS2019},
+  year         = {2026},
+  howpublished = {GitHub},
+  url          = {https://github.com/BrenoFariasdaSilva/CNN-LSTM-DDoS-Detection-CICDDoS2019},
+  note         = {Reproduction implementation of the Rajput and Upadhyay (2024) CICDDoS2019 CNN-LSTM experiment}
+}
+
+@article{rajput2024enhanced,
+  author  = {Rajput, Deepak Singh and Upadhyay, Arvind Kumar},
+  title   = {Enhanced Network Defense: Optimized Multi-Layer Ensemble for DDoS Attack Detection},
+  journal = {International Journal of Experimental Research and Review},
+  volume  = {46},
+  pages   = {253--272},
+  year    = {2024},
+  doi     = {10.52756/ijerr.2024.v46.020},
+  url     = {https://doi.org/10.52756/ijerr.2024.v46.020}
+}
+```
+
+If you find the repository useful, consider starring it and opening issues or pull requests for reproducibility improvements.
