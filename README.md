@@ -212,3 +212,11 @@ The current reconstruction defaults are:
 | Early stopping | Disabled by default (`patience=0`) |
 
 The input feature axis is treated as the CNN/LSTM sequence axis because the paper does not publish an exact temporal window length, stride, or flow grouping procedure.
+
+## Dataset Handling and Sampling
+
+The project expects a local copy of [CICDDoS2019](https://www.unb.ca/cic/datasets/ddos-2019.html).
+
+### Read-only source protection
+
+The raw dataset directory is never intentionally modified. The program records recursive CSV `size` and `mtime_ns` metadata before and after the experiment and raises an error if they differ.
