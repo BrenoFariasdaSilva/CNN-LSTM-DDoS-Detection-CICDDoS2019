@@ -473,3 +473,14 @@ An exact independent reproduction of the paper's reported number cannot be guara
 - the number of independent repeated runs.
 
 The project therefore stores all resolved settings and outputs so the reconstruction remains auditable. The Linux helper currently uses `RUNS=5` as a robustness choice; this should **not** be interpreted as a run count explicitly reported by the paper.
+
+## Results Target
+
+The repository is built to investigate the paper's reported CNN-LSTM performance, not to hard-code or force it.
+
+| Task | Paper-reported accuracy |
+| --- | ---: |
+| Binary CNN-LSTM | 99.84% |
+| **12-class multiclass CNN-LSTM targeted here** | **99.76%** |
+
+Actual results depend on the reconstructed settings, source files, software/hardware environment, and stochastic training behavior. Generated `metrics.json`, `runs_summary.csv`, and `aggregate_metrics.json` should be used when reporting results from this implementation.
