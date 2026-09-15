@@ -76,3 +76,37 @@ def save_npy_with_eta(array: np.ndarray, path: Path, label: str, chunk_rows: int
             )  # Report save progress using the original fields
     memmap.flush()  # Flush pending memory-mapped writes to the destination file
     del memmap  # Release the memory-map object after persistence completes
+
+
+def persist_generated_dataset(generated_dir: Path, X_train_smote: np.ndarray, y_train_smote: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, train_idx: np.ndarray, val_idx: np.ndarray, test_idx: np.ndarray, manifest: Mapping[str, object]) -> None:
+    """
+    Persist one run's transformed train, validation, test, index, and manifest artifacts.
+
+    :param generated_dir: Destination directory for transformed dataset artifacts.
+    :param X_train_smote: Standardized training features after training-only SMOTE.
+    :param y_train_smote: Integer training labels after training-only SMOTE.
+    :param X_val: Standardized validation features without augmentation.
+    :param y_val: Integer validation labels without augmentation.
+    :param X_test: Standardized held-out test features without augmentation.
+    :param y_test: Integer held-out test labels without augmentation.
+    :param train_idx: Original sampled-dataset row indices assigned to training.
+    :param val_idx: Original sampled-dataset row indices assigned to validation.
+    :param test_idx: Original sampled-dataset row indices assigned to held-out test.
+    :param manifest: Preprocessing metadata describing transformations for the run.
+    :return: None.
+    """
+
+    generated_dir.mkdir(parents=True, exist_ok=True)  # Ensure the per-run transformed-data directory exists
+    print(f"[DERIVED] Saving transformed dataset under {generated_dir}")  # Report transformed-data persistence location
+    save_npy_with_eta(X_train_smote, generated_dir / "X_train_standardized_smote.npy", "X_train_standardized_smote")  # Persist SMOTE training features
+    save_npy_with_eta(y_train_smote, generated_dir / "y_train_smote.npy", "y_train_smote")  # Persist SMOTE training labels
+    save_npy_with_eta(X_val, generated_dir / "X_validation_standardized.npy", "X_validation_standardized")  # Persist untouched validation features after train-fitted transformations
+    save_npy_with_eta(y_val, generated_dir / "y_validation.npy", "y_validation")  # Persist validation labels
+    save_npy_with_eta(X_test, generated_dir / "X_test_standardized.npy", "X_test_standardized")  # Persist held-out test features after train-fitted transformations
+    save_npy_with_eta(y_test, generated_dir / "y_test.npy", "y_test")  # Persist held-out test labels
+    save_npy_with_eta(train_idx, generated_dir / "train_indices.npy", "train_indices")  # Persist training row indices
+    save_npy_with_eta(val_idx, generated_dir / "validation_indices.npy", "validation_indices")  # Persist validation row indices
+    save_npy_with_eta(test_idx, generated_dir / "test_indices.npy", "test_indices")  # Persist test row indices
+    (generated_dir / "preprocessing_manifest.json").write_text(
+        json.dumps(dict(manifest), indent=2), encoding="utf-8"
+    )  # Persist the preprocessing manifest in the original JSON format
