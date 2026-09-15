@@ -151,3 +151,43 @@ def query_smote_neighbors(class_x: np.ndarray, k: int, class_name: str, neighbor
             f"ETA={format_duration(eta_query)}"
         )  # Report exact-neighbor query progress
     return neighbors, time.time() - neighbor_started  # Return the complete neighbor graph and construction duration
+
+
+def generate_smote_rows(class_x: np.ndarray, neighbors: np.ndarray, n_generate: int, k: int, generation_chunk: int, rng: np.random.Generator, class_name: str, generated_total: int, total_to_generate: int, smote_start: float) -> Tuple[np.ndarray, int]:
+    """
+    Generate one class's synthetic SMOTE rows in bounded batches.
+
+    :param class_x: Standardized training rows belonging to one class.
+    :param neighbors: Same-class neighbor-index matrix for each base row.
+    :param n_generate: Number of synthetic rows required for the class.
+    :param k: Effective number of eligible same-class neighbors per base row.
+    :param generation_chunk: Maximum synthetic rows generated per allocation batch.
+    :param rng: SMOTE random generator shared across all classes.
+    :param class_name: Canonical class name used in progress messages.
+    :param generated_total: Synthetic row count generated for prior classes.
+    :param total_to_generate: Total synthetic rows required across all classes.
+    :param smote_start: Global SMOTE start timestamp used for ETA estimation.
+    :return: Concatenated synthetic rows for the class and updated global generated count.
+    """
+
+    n_current = len(class_x)  # Capture class row count for random base-sample selection
+    remaining = n_generate  # Track synthetic rows still required for this class
+    generated_parts: List[np.ndarray] = []  # Collect bounded synthetic batches before one class-level concatenation
+    while remaining > 0:  # Continue until the class reaches the majority-class target size
+        batch_n = min(remaining, generation_chunk)  # Bound the current synthetic allocation size
+        base_local = rng.integers(0, n_current, size=batch_n)  # Select random base samples using the shared original RNG
+        neighbor_slot = rng.integers(0, k, size=batch_n)  # Select one eligible neighbor slot for each base sample
+        neighbor_local = neighbors[base_local, neighbor_slot]  # Resolve selected slots to same-class neighbor row indices
+        interpolation = rng.random((batch_n, 1), dtype=np.float32)  # Draw one interpolation coefficient per synthetic row
+        synthetic = class_x[base_local] + interpolation * (class_x[neighbor_local] - class_x[base_local])  # Interpolate along the base-to-neighbor segment
+        generated_parts.append(synthetic.astype(np.float32, copy=False))  # Store the current float32 synthetic batch
+        remaining -= batch_n  # Reduce this class's outstanding synthetic-row count
+        generated_total += batch_n  # Advance the global SMOTE progress count
+        elapsed = time.time() - smote_start  # Calculate elapsed global SMOTE time
+        eta = eta_from_progress(generated_total, max(total_to_generate, 1), elapsed)  # Estimate remaining global SMOTE time
+        print(
+            f"[ETA][SMOTE] {generated_total:,}/{total_to_generate:,} "
+            f"({100*generated_total/max(total_to_generate,1):.1f}%) | "
+            f"elapsed={format_duration(elapsed)} | ETA={format_duration(eta)} | {class_name}"
+        )  # Report synthetic generation progress using the original fields
+    return np.concatenate(generated_parts, axis=0), generated_total  # Preserve original one-class concatenation behavior and progress state
