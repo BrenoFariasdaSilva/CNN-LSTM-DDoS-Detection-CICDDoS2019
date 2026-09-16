@@ -101,7 +101,7 @@ The paper describes a hybrid CNN-LSTM detector for CICDDoS2019. This implementat
 
 | Stage | Paper/reproduction intent | Implementation in this repository |
 | --- | --- | --- |
-| Dataset | CICDDoS2019 | Recursively discovers source CSV files under `--data-dir`; source files are read-only. |
+| Dataset | CICDDoS2019 | Discovers direct `*.csv` children of `01-12` and `03-11` under `--data-dir`; source files are read-only. |
 | Multiclass task | 12-class DDoS classification | Uses the reconstructed 12-class mapping shown below. |
 | Data ingestion | Large CICDDoS2019 flow corpus | Reads CSVs in configurable chunks instead of loading the raw corpus at once. |
 | Sampling | Publication does not provide a complete reproducible sampling recipe | Supports bounded per-file/per-class sampling or full uncapped retention with `0`. |
@@ -123,7 +123,7 @@ A crucial implementation rule is that **validation and test data never participa
 
 ```mermaid
 flowchart TD
-    A[RAW CICDDoS2019<br/>read-only] --> B[Discover all CSV files]
+    A[RAW CICDDoS2019<br/>read-only] --> B[Discover day-level CSV files]
     B --> C[Stream CSVs in chunks]
     C --> D{Sampling mode}
     D -->|Mac / bounded| E[Per-file and global class caps]
@@ -219,7 +219,7 @@ The project expects a local copy of [CICDDoS2019](https://www.unb.ca/cic/dataset
 
 ### Read-only source protection
 
-The raw dataset directory is never intentionally modified. The program records recursive CSV `size` and `mtime_ns` metadata before and after the experiment and raises an error if they differ.
+The raw dataset directory is never intentionally modified. Only CSVs directly inside `01-12` and `03-11` are experiment inputs. Generated analysis CSVs in nested directories are excluded from schema inspection, sampling, and source snapshots. The program records source CSV `size` and `mtime_ns` metadata before and after the experiment and raises an error if they differ.
 
 ### Bounded Mac mode
 

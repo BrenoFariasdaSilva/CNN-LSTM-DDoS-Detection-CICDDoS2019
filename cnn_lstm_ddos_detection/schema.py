@@ -9,7 +9,7 @@ Description :
     computes the common usable feature schema across all source CSV files.
 
     Key features include:
-        - Recursively discovers source CSV files without modifying them.
+        - Discovers direct CSV children of the two CICDDoS2019 day directories.
         - Preserves exact CSV header spellings required by pandas usecols.
         - Computes a stable common feature set and canonical 12-class labels.
 
@@ -28,6 +28,7 @@ Dependencies:
     - pandas.
     - cnn_lstm_ddos_detection.config.
     - cnn_lstm_ddos_detection.constants.
+    - cnn_lstm_ddos_detection.source_files.
     - cnn_lstm_ddos_detection.timing.
 
 Assumptions & Notes:
@@ -47,6 +48,7 @@ import pandas as pd
 
 from .config import FileSchema
 from .constants import BASE_LABEL_ALIASES, DEFAULT_DROP_KEYS
+from .source_files import discover_csv_files as discover_csv_files
 from .timing import eta_from_progress, format_duration
 
 
@@ -70,20 +72,6 @@ def norm_column_key(name: object) -> str:
     """
 
     return re.sub(r"[^a-z0-9]+", "", str(name).strip().lower())  # Normalize headers while preserving exact names elsewhere
-
-
-def discover_csv_files(root: Path) -> List[Path]:
-    """
-    Discover all CSV files recursively below the raw dataset root.
-
-    :param root: Root directory of the CICDDoS2019 dataset.
-    :return: Sorted list of discovered CSV file paths.
-    """
-
-    files = sorted(path for path in root.rglob("*.csv") if path.is_file())  # Discover source CSV files deterministically
-    if not files:  # Verify if recursive discovery returned no usable CSV files
-        raise FileNotFoundError(f"No .csv files were found recursively under {root}")  # Reject an invalid or incomplete dataset root
-    return files  # Return all source CSV paths in deterministic lexical order
 
 
 def infer_label_column(columns: Sequence[str]) -> str:

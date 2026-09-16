@@ -117,9 +117,9 @@ def persist_configuration(cfg: Config, output_dir: Path) -> None:
 
 def persist_source_inventory(csv_files: Sequence[Path], data_dir: Path, output_dir: Path) -> Dict[str, Dict[str, int]]:
     """
-    Persist the pre-run raw-source snapshot and recursive CSV file inventory.
+    Persist the pre-run raw-source snapshot and day-level CSV file inventory.
 
-    :param csv_files: Ordered source CSV files discovered recursively.
+    :param csv_files: Ordered direct day-level source CSV files.
     :param data_dir: Raw dataset root used for relative source paths.
     :param output_dir: Generated-output directory receiving inventory artifacts.
     :return: Raw-source metadata snapshot used later for integrity verification.
@@ -131,7 +131,7 @@ def persist_source_inventory(csv_files: Sequence[Path], data_dir: Path, output_d
     )  # Persist the pre-run source integrity snapshot
     (output_dir / "csv_files.txt").write_text(
         "\n".join(str(path.relative_to(data_dir)) for path in csv_files), encoding="utf-8"
-    )  # Persist the original recursive source-file inventory format
+    )  # Persist the original source-file inventory format
     return raw_snapshot  # Return the snapshot for post-run integrity comparison
 
 
@@ -157,7 +157,7 @@ def build_and_cache_sample(args: argparse.Namespace, csv_files: Sequence[Path], 
     Inspect source schemas, build the sampled real-data matrix, and persist the sample cache.
 
     :param args: Validated command-line namespace controlling schema and sampling behavior.
-    :param csv_files: Ordered source CSV files discovered recursively.
+    :param csv_files: Ordered direct day-level source CSV files.
     :param cache_x: Destination .npy path for sampled features.
     :param cache_y: Destination .npy path for sampled labels.
     :param cache_features: Destination JSON path for readable feature names.
@@ -370,8 +370,8 @@ def run_workflow(args: argparse.Namespace, pipeline_started: float) -> None:
     (args.output_dir / "environment.json").write_text(
         json.dumps(environment_info(device), indent=2), encoding="utf-8"
     )  # Persist runtime environment and accelerator metadata
-    csv_files = discover_csv_files(args.data_dir)  # Discover every raw source CSV recursively
-    print(f"[DATA] Found {len(csv_files)} CSV files across recursive day directories.")  # Report discovered source-file count
+    csv_files = discover_csv_files(args.data_dir)  # Discover direct raw CSVs in both CICDDoS2019 day directories
+    print(f"[DATA] Found {len(csv_files)} CSV files across CICDDoS2019 day directories.")  # Report discovered source-file count
     raw_snapshot = persist_source_inventory(csv_files, args.data_dir, args.output_dir)  # Persist pre-run source inventory and integrity metadata
     features, labels, feature_names = load_or_build_sample(args, csv_files)  # Build or explicitly reuse the bounded sampled real-data dataset
     validate_sample(features, labels)  # Confirm sampled shape alignment and full 12-class coverage
