@@ -47,7 +47,7 @@ PID_FILE := $(LOG_DIR)/main.pid
 UNAME_S := $(shell uname -s 2>/dev/null)
 
 MAC_DATA_DIR ?= /Users/brenofarias/Downloads/RAW Datasets/CICDDoS2019
-LINUX_DATA_DIR ?= $(HOME)/DDoS-Detector/Datasets/CICDDoS2019
+LINUX_DATA_DIR ?= $(HOME)/RAW Datasets/CICDDoS2019
 MAC_OUTPUT_DIR ?= $(PROJECT_DIR)/CNN-LSTM-DDoS-Detection-100k
 LINUX_OUTPUT_DIR ?= $(PROJECT_DIR)/CNN-LSTM-DDoS-Detection-Full
 
